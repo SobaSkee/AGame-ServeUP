@@ -1,11 +1,32 @@
+import { useState } from 'react'
 import { CameraIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
+import PantryCameraModal from './PantryCameraModal'
 
-export default function QuickActionCards() {
+type Props = {
+  /** Called when the user captures or uploads a pantry photo from Scan Pantry. */
+  onPantryImage?: (file: File) => void
+}
+
+export default function QuickActionCards({ onPantryImage }: Props) {
+  const [cameraOpen, setCameraOpen] = useState(false)
+
+  const handlePantryFile = (file: File) => {
+    onPantryImage?.(file)
+  }
+
   return (
     <div className="flex w-full flex-row gap-3 md:gap-4">
+      <PantryCameraModal
+        open={cameraOpen}
+        onClose={() => setCameraOpen(false)}
+        onCapture={handlePantryFile}
+      />
+
       <button
         type="button"
+        onClick={() => setCameraOpen(true)}
         className="flex h-32 min-h-0 min-w-0 flex-1 flex-col justify-between rounded-xl border border-border bg-background p-5 text-left transition-colors hover:bg-surface md:h-36"
+        aria-label="Scan pantry"
       >
         <div className="flex size-10 items-center justify-center rounded-full border border-border bg-background text-text">
           <CameraIcon className="size-[15px]" strokeWidth={1.75} aria-hidden />
