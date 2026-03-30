@@ -2,71 +2,42 @@ import { useState } from 'react'
 import { CameraIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
 import PantryCameraModal from './PantryCameraModal'
 
-type DetectedIngredient = {
-  name: string
-  confidence: 'high' | 'medium' | 'low'
-  category?: string
-}
-
 type Props = {
-  /** Called when the user captures or uploads a pantry photo from Scan Pantry. */
-  onPantryImage?: (file: File) => void
-  /** Called when ingredients are detected */
-  onIngredientsDetected?: (ingredients: DetectedIngredient[]) => void
+  /** Called after the user picks a pantry photo in the scan modal. */
+  onPantryImage: (file: File) => void
+  /** While the parent is calling the detect API */
+  isPantryScanning?: boolean
 }
 
-export default function QuickActionCards({ onPantryImage, onIngredientsDetected }: Props) {
+export default function QuickActionCards({ onPantryImage, isPantryScanning }: Props) {
   const [cameraOpen, setCameraOpen] = useState(false)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-
-  const handlePantryFile = async (file: File) => {
-    onPantryImage?.(file)
-    
-    // Send to backend for analysis
-    setIsAnalyzing(true)
-    try {
-      const formData = new FormData()
-      formData.append('image', file)
-      
-      const response = await fetch('http://localhost:3001/api/pantry/detect', {
-        method: 'POST',
-        body: formData,
-      })
-      
-      const data = await response.json()
-      
-      if (data.success && data.ingredients) {
-        onIngredientsDetected?.(data.ingredients)
-        console.log('Detected ingredients:', data.ingredients)
-      } else {
-        console.error('Detection failed:', data.error)
-      }
-    } catch (error) {
-      console.error('Error analyzing image:', error)
-    } finally {
-      setIsAnalyzing(false)
-    }
-  }
 
   return (
     <div className="flex w-full flex-row gap-3 md:gap-4">
       <PantryCameraModal
         open={cameraOpen}
         onClose={() => setCameraOpen(false)}
-        onCapture={handlePantryFile}
+        onCapture={(file) => {
+          onPantryImage(file)
+          setCameraOpen(false)
+        }}
       />
 
       <button
         type="button"
+        disabled={isPantryScanning}
         onClick={() => setCameraOpen(true)}
-        className="flex h-32 min-h-0 min-w-0 flex-1 flex-col justify-between rounded-xl border border-border bg-background p-5 text-left transition-colors hover:bg-surface md:h-36"
+        className="flex h-32 min-h-0 min-w-0 flex-1 flex-col justify-between rounded-xl border border-border bg-background p-5 text-left transition-colors hover:bg-surface disabled:cursor-wait disabled:opacity-70 md:h-36"
         aria-label="Scan pantry"
+        aria-busy={isPantryScanning}
       >
         <div className="flex size-10 items-center justify-center rounded-full border border-border bg-background text-text">
           <CameraIcon className="size-[15px]" strokeWidth={1.75} aria-hidden />
         </div>
         <div className="flex flex-col gap-0">
-          <span className="text-sm font-semibold leading-5 text-text">Scan Pantry</span>
+          <span className="text-sm font-semibold leading-5 text-text">
+            {isPantryScanning ? 'Scanning…' : 'Scan Pantry'}
+          </span>
           <span className="text-xs font-normal leading-4 text-text/65">AI Recognition</span>
         </div>
       </button>

@@ -3,9 +3,11 @@ import Header from '../components/Header'
 import QuickActionCards from '../components/home/QuickActionCards'
 import SearchBar from '../components/home/SearchBar'
 import SuggestedRecipes from '../components/home/SuggestedRecipes'
+import spicyIcon from '../assets/icons/spicy.svg'
 import { homeCategoryChips } from '../data/homeCategoryChips'
 import { suggestedRecipes } from '../data/suggestedRecipes'
 import { contentShellClass } from '../layout/contentShell'
+import { API_BASE } from '../config/api'
 
 type DetectedIngredient = {
   name: string
@@ -41,6 +43,8 @@ export default function HomeScreen() {
   const [detectedIngredients, setDetectedIngredients] = useState<DetectedIngredient[]>([])
   const [recipes, setRecipes] = useState<Recipe[]>([])
   const [loadingRecipes, setLoadingRecipes] = useState(false)
+  const [pantryScanning, setPantryScanning] = useState(false)
+  const [detectError, setDetectError] = useState<string | null>(null)
 
   // Get recipes from backend based on detected ingredients
   const getRecipes = async (ingredients: DetectedIngredient[]) => {
@@ -53,7 +57,7 @@ export default function HomeScreen() {
       
       // Call backend recipe API
       const response = await fetch(
-        `http://localhost:3001/api/ingredients/suggest-recipes?ingredients=${encodeURIComponent(ingredientList)}`
+        `${API_BASE}/api/ingredients/suggest-recipes?ingredients=${encodeURIComponent(ingredientList)}`
       )
 
       const data = await response.json()
@@ -76,6 +80,37 @@ export default function HomeScreen() {
     setDetectedIngredients(ingredients)
     getRecipes(ingredients)
   }
+
+  const handlePantryImage = async (file: File) => {
+    setPantryScanning(true)
+    setDetectError(null)
+    try {
+      const formData = new FormData()
+      formData.append('image', file)
+      const res = await fetch(`${API_BASE}/api/pantry/detect`, {
+        method: 'POST',
+        body: formData,
+      })
+
+      let data: { success?: boolean; ingredients?: DetectedIngredient[]; error?: string }
+      try {
+        data = await res.json()
+      } catch {
+        setDetectError('Invalid response from server')
+        return
+      }
+
+      if (data.success && Array.isArray(data.ingredients)) {
+        handleIngredientsDetected(data.ingredients)
+      } else {
+        setDetectError(data.error ?? (res.ok ? 'Could not detect ingredients' : `Request failed (${res.status})`))
+      }
+    } catch {
+      setDetectError('Network error — is the backend running?')
+    } finally {
+      setPantryScanning(false)
+    }
+  }
   return (
     <div className="min-h-screen bg-background font-sans text-text antialiased">
       <Header />
@@ -92,7 +127,12 @@ export default function HomeScreen() {
               <span className="hidden lg:inline">What are you cooking today?</span>
             </h1>
             <SearchBar />
-            <QuickActionCards onIngredientsDetected={handleIngredientsDetected} />
+            <QuickActionCards onPantryImage={handlePantryImage} isPantryScanning={pantryScanning} />
+            {detectError && (
+              <p className="rounded-lg border border-primary/30 bg-surface px-3 py-2 text-sm text-text" role="alert">
+                {detectError}
+              </p>
+            )}
           </section>
 
           {/* Display detected ingredients */}
@@ -122,13 +162,13 @@ export default function HomeScreen() {
           {/* AI-Generated Recipes Section */}
           {loadingRecipes && (
             <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
-              <span className="text-sm text-text/65">🤖 Finding recipes for you...</span>
+              <span className="text-sm text-text/65">Finding recipes for you...</span>
             </section>
           )}
 
           {recipes.length > 0 && !loadingRecipes && (
             <section className="flex flex-col gap-4 rounded-lg border border-accent bg-surface p-4">
-              <h2 className="text-lg font-semibold text-text">✨ Recipe Ideas</h2>
+              <h2 className="text-lg font-semibold text-text">Recipe Ideas</h2>
 
               {recipes.map((recipe) => (
                 <div key={recipe.id} className="border border-border rounded-lg p-4 bg-background">
@@ -154,9 +194,18 @@ export default function HomeScreen() {
                   {/* Recipe info: time, servings, cuisine */}
                   <div className="flex flex-wrap gap-3 text-xs text-text/65 mb-4 pb-4 border-b border-border/30">
                     <span>⏱️ {recipe.prepTime}</span>
-                    {recipe.cookTime && <span>🔥 {recipe.cookTime}</span>}
+                    {recipe.cookTime && (
+                      <span className="inline-flex items-center gap-1">
+                        <img
+                          src={spicyIcon}
+                          alt=""
+                          className="size-3 shrink-0 object-contain"
+                          aria-hidden
+                        />
+                        {recipe.cookTime}
+                      </span>
+                    )}
                     {recipe.servings && <span>🍽️ Serves {recipe.servings}</span>}
-                    {recipe.cuisine && <span>🌍 {recipe.cuisine}</span>}
                   </div>
 
                   {/* Ingredients list */}

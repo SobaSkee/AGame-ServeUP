@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const app = express()
-const PORT = process.env.PORT || 3001
+const PORT = Number(process.env.PORT) || 3001
 
 // Middleware
 app.use(cors())
@@ -114,8 +114,9 @@ app.get('/api/ingredients/suggest-recipes', async (req: Request, res: Response) 
 /**
  * Start server
  */
-app.listen(PORT, () => {
-  console.log(`🍽️  ServeUP Backend running on http://localhost:${PORT}`)
+const HOST = '0.0.0.0'
+app.listen(PORT, HOST, () => {
+  console.log(`🍽️  ServeUP Backend on http://localhost:${PORT} (LAN: all interfaces)`)
   console.log(
     `📝 API Docs: http://localhost:${PORT}/api/pantry/detect (POST with image)`,
   )
