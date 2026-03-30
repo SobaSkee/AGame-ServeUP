@@ -2,16 +2,50 @@ import { useState } from 'react'
 import { CameraIcon, PencilSquareIcon } from '@heroicons/react/24/outline'
 import PantryCameraModal from './PantryCameraModal'
 
+type DetectedIngredient = {
+  name: string
+  confidence: 'high' | 'medium' | 'low'
+  category?: string
+}
+
 type Props = {
   /** Called when the user captures or uploads a pantry photo from Scan Pantry. */
   onPantryImage?: (file: File) => void
+  /** Called when ingredients are detected */
+  onIngredientsDetected?: (ingredients: DetectedIngredient[]) => void
 }
 
-export default function QuickActionCards({ onPantryImage }: Props) {
+export default function QuickActionCards({ onPantryImage, onIngredientsDetected }: Props) {
   const [cameraOpen, setCameraOpen] = useState(false)
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
 
-  const handlePantryFile = (file: File) => {
+  const handlePantryFile = async (file: File) => {
     onPantryImage?.(file)
+    
+    // Send to backend for analysis
+    setIsAnalyzing(true)
+    try {
+      const formData = new FormData()
+      formData.append('image', file)
+      
+      const response = await fetch('http://localhost:3001/api/pantry/detect', {
+        method: 'POST',
+        body: formData,
+      })
+      
+      const data = await response.json()
+      
+      if (data.success && data.ingredients) {
+        onIngredientsDetected?.(data.ingredients)
+        console.log('Detected ingredients:', data.ingredients)
+      } else {
+        console.error('Detection failed:', data.error)
+      }
+    } catch (error) {
+      console.error('Error analyzing image:', error)
+    } finally {
+      setIsAnalyzing(false)
+    }
   }
 
   return (
