@@ -7,6 +7,8 @@ import { fileURLToPath } from 'url'
 import 'dotenv/config'
 import { detectIngredientsFromImage } from './services/ingredientDetection.js'
 import { generateRecipesFromIngredients } from './services/recipeGeneration.js'
+import { connectToDatabase } from "./services/database.service.ts"
+import { recipesRouter } from "./routes/recipes.router.ts"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -115,11 +117,17 @@ app.get('/api/ingredients/suggest-recipes', async (req: Request, res: Response) 
  * Start server
  */
 const HOST = '0.0.0.0'
-app.listen(PORT, HOST, () => {
-  console.log(`🍽️  ServeUP Backend on http://localhost:${PORT} (LAN: all interfaces)`)
-  console.log(
-    `📝 API Docs: http://localhost:${PORT}/api/pantry/detect (POST with image)`,
-  )
-})
+connectToDatabase()
+	.then(() => {
+		app.use("/recipes", recipesRouter);
+		app.listen(PORT, HOST, () => {
+			console.log(`🍽️  ServeUP Backend on http://localhost:${PORT} (LAN: all interfaces)`);
+			console.log(`📝 API Docs: http://localhost:${PORT}/api/pantry/detect (POST with image)`,);
+		});
+	})
+	.catch((error: Error) => {
+		console.error("Database connection failed", error);
+		process.exit();
+	});
 
 export default app
