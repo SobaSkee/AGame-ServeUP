@@ -7,9 +7,11 @@ type Props = {
   onPantryImage: (file: File) => void
   /** While the parent is calling the detect API */
   isPantryScanning?: boolean
+  /** Navigate to manual ingredient entry */
+  onManualAdd?: () => void
 }
 
-export default function QuickActionCards({ onPantryImage, isPantryScanning }: Props) {
+export default function QuickActionCards({ onPantryImage, isPantryScanning, onManualAdd }: Props) {
   const [cameraOpen, setCameraOpen] = useState(false)
 
   return (
@@ -44,6 +46,7 @@ export default function QuickActionCards({ onPantryImage, isPantryScanning }: Pr
 
       <button
         type="button"
+        onClick={() => onManualAdd?.()}
         className="flex h-32 min-h-0 min-w-0 flex-1 flex-col justify-between rounded-xl border border-border bg-background p-5 text-left transition-colors hover:bg-surface md:h-36"
       >
         <div className="flex size-10 items-center justify-center rounded-full border border-border bg-background text-text">

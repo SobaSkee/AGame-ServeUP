@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url'
 import 'dotenv/config'
 import { detectIngredientsFromImage } from './services/ingredientDetection.js'
 import { generateRecipesFromIngredients } from './services/recipeGeneration.js'
-import { connectToDatabase } from "./services/database.service.ts"
+import { collections, connectToDatabase } from "./services/database.service.ts"
 import { recipesRouter } from "./routes/recipes.router.ts"
 
 const __filename = fileURLToPath(import.meta.url)
@@ -100,7 +100,6 @@ app.get('/api/ingredients/suggest-recipes', async (req: Request, res: Response) 
 
     const ingredientList = ingredients.split(',').map((i) => i.trim())
 
-    // Generate recipes using Gemini AI
     const result = await generateRecipesFromIngredients(ingredientList)
 
     res.json(result)
@@ -117,17 +116,14 @@ app.get('/api/ingredients/suggest-recipes', async (req: Request, res: Response) 
  * Start server
  */
 const HOST = '0.0.0.0'
-connectToDatabase()
-	.then(() => {
+connectToDatabase().then(() => {
+	if (collections.recipes) {
 		app.use("/recipes", recipesRouter);
-		app.listen(PORT, HOST, () => {
-			console.log(`🍽️  ServeUP Backend on http://localhost:${PORT} (LAN: all interfaces)`);
-			console.log(`📝 API Docs: http://localhost:${PORT}/api/pantry/detect (POST with image)`,);
-		});
-	})
-	.catch((error: Error) => {
-		console.error("Database connection failed", error);
-		process.exit();
+	}
+	app.listen(PORT, HOST, () => {
+		console.log(`🍽️  ServeUP Backend on http://localhost:${PORT} (LAN: all interfaces)`);
+		console.log(`📝 API Docs: http://localhost:${PORT}/api/pantry/detect (POST with image)`,);
 	});
+});
 
 export default app
