@@ -7,7 +7,7 @@ import SuggestedRecipes from '../components/home/SuggestedRecipes'
 import { homeCategoryChips } from '../data/homeCategoryChips'
 import { suggestedRecipes } from '../data/suggestedRecipes'
 import { contentShellClass } from '../layout/contentShell'
-import { API_BASE } from '../config/api'
+import { API_BASE, PANTRY_USER_ID } from '../config/api'
 import { usePantryScan } from '../context/PantryScanContext'
 
 type DetectedIngredient = {
@@ -28,12 +28,22 @@ export default function HomeScreen() {
     try {
       const formData = new FormData()
       formData.append('image', file)
+      if (PANTRY_USER_ID) {
+        formData.append('userId', PANTRY_USER_ID)
+      }
       const res = await fetch(`${API_BASE}/api/pantry/detect`, {
         method: 'POST',
         body: formData,
       })
 
-      let data: { success?: boolean; ingredients?: DetectedIngredient[]; error?: string }
+      let data: {
+        success?: boolean
+        ingredients?: DetectedIngredient[]
+        error?: string
+        persisted?: boolean
+        scanId?: string
+        imageUrl?: string
+      }
       try {
         data = await res.json()
       } catch {

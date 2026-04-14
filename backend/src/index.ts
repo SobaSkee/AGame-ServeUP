@@ -4,11 +4,12 @@ import multer from 'multer'
 import * as fs from 'fs'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
+import { ObjectId } from 'mongodb'
 import 'dotenv/config'
 import { detectIngredientsFromImage } from './services/ingredientDetection.js'
 import { generateRecipesFromIngredients } from './services/recipeGeneration.js'
-import { collections, connectToDatabase } from "./services/database.service.ts"
-import { recipesRouter } from "./routes/recipes.router.ts"
+import { collections, connectToDatabase } from "./services/database.service.js"
+import { recipesRouter } from "./routes/recipes.router.js"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -38,7 +39,13 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage })
 
+function publicApiBaseUrl(): string {
+	const raw = process.env.API_PUBLIC_URL?.trim()
+	if (raw) return raw.replace(/\/$/, '')
+	return `http://localhost:${PORT}`
+}
 
+app.use('/uploads', express.static(uploadDir))
 
 // Routes
 
@@ -52,10 +59,18 @@ app.get('/health', (req: Request, res: Response) => {
 /**
  * Upload and analyze pantry image
  * POST /api/pantry/detect
+ * Multipart: field "image" (file). Optional field "userId" (24-char hex Mongo ObjectId) — when set and DB is connected, scan is saved to ingredientScans.
  */
 app.post('/api/pantry/detect', upload.single('image'), async (req: Request, res: Response) => {
+  const imagePath = req.file?.path
+  const deleteFile = (p: string) => {
+    fs.unlink(p, (err) => {
+      if (err) console.warn('Could not delete temp file:', err)
+    })
+  }
+
   try {
-    if (!req.file) {
+    if (!req.file || !imagePath) {
       res.status(400).json({
         success: false,
         error: 'No image file provided',
@@ -63,18 +78,52 @@ app.post('/api/pantry/detect', upload.single('image'), async (req: Request, res:
       return
     }
 
-    const imagePath = req.file.path
-
-    // Analyze the image using Gemini Vision
     const result = await detectIngredientsFromImage(imagePath)
 
-    // Clean up the uploaded file
-    fs.unlink(imagePath, (err) => {
-      if (err) console.warn('Could not delete temp file:', err)
-    })
+    if (!result.success) {
+      deleteFile(imagePath)
+      res.json(result)
+      return
+    }
 
-    res.json(result)
+    const ingredientsDetected = result.ingredients
+      .map((i) => i.name.trim())
+      .filter((n) => n.length > 0)
+
+    const userIdRaw = typeof req.body?.userId === 'string' ? req.body.userId.trim() : ''
+    const scans = collections.ingredientScans
+    const shouldPersist = Boolean(scans && userIdRaw && ObjectId.isValid(userIdRaw))
+
+    if (!shouldPersist) {
+      deleteFile(imagePath)
+      res.json({
+        ...result,
+        persisted: false,
+      })
+      return
+    }
+
+    const filename = req.file.filename
+    const imageUrl = `${publicApiBaseUrl()}/uploads/${encodeURIComponent(filename)}`
+    const createdAt = new Date()
+
+    const insertDoc = {
+      user_id: new ObjectId(userIdRaw),
+      image_url: imageUrl,
+      ingredients_detected: ingredientsDetected,
+      created_at: createdAt,
+    }
+
+    const insertResult = await scans!.insertOne(insertDoc)
+
+    res.json({
+      ...result,
+      persisted: true,
+      scanId: insertResult.insertedId.toString(),
+      imageUrl,
+    })
   } catch (error) {
+    if (imagePath) deleteFile(imagePath)
     const errorMessage = error instanceof Error ? error.message : String(error)
     res.status(500).json({
       success: false,
