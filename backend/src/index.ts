@@ -10,6 +10,8 @@ import { detectIngredientsFromImage } from './services/ingredientDetection.js'
 import { generateRecipesFromIngredients } from './services/recipeGeneration.js'
 import { collections, connectToDatabase } from "./services/database.service.js"
 import { recipesRouter } from "./routes/recipes.router.js"
+import cookieParser from "cookie-parser";
+import authRoutes from "./routes/auth.router";
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -18,8 +20,14 @@ const app = express()
 const PORT = Number(process.env.PORT) || 3001
 
 // Middleware
-app.use(cors())
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+)
 app.use(express.json())
+app.use(cookieParser())
 
 // Setup multer for file uploads
 const uploadDir = path.join(__dirname, '..', 'uploads')
@@ -46,6 +54,7 @@ function publicApiBaseUrl(): string {
 }
 
 app.use('/uploads', express.static(uploadDir))
+app.use("/api/auth", authRoutes)
 
 // Routes
 
@@ -55,6 +64,7 @@ app.use('/uploads', express.static(uploadDir))
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' })
 })
+app.use('/uploads', express.static(uploadDir))
 
 /**
  * Upload and analyze pantry image
