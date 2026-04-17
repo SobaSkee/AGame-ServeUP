@@ -1,7 +1,10 @@
 import express from "express";
-import { registerUser, loginUser } from "../services/auth.service";
+import jwt from "jsonwebtoken";
+import { registerUser, loginUser, getUserById } from "../services/auth.service";
 
 const router = express.Router();
+
+const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
 router.post("/register", async (req, res) => {
   try {
@@ -37,6 +40,33 @@ router.post("/login", async (req, res) => {
     });
   } catch (err: any) {
     res.status(400).json({ message: err.message });
+  }
+});
+
+router.get("/me", (req, res) => {
+  try {
+    const token = req.cookies.token;
+
+    if (!token) {
+      return res.status(401).json({ message: "Not logged in" });
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    const user = getUserById(decoded.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+      },
+    });
+  } catch {
+    return res.status(401).json({ message: "Invalid token" });
   }
 });
 

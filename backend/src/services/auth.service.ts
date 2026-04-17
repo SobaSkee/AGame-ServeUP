@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User } from "../models/user";
 
-const users: User[] = []; // TEMP (no DB yet)
+const users: User[] = [];
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
@@ -40,4 +40,8 @@ export const loginUser = async (email: string, password: string) => {
   });
 
   return { user, token };
+};
+
+export const getUserById = (id: string) => {
+  return users.find((u) => u.id === id) || null;
 };

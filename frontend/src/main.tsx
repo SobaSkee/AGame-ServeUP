@@ -5,15 +5,18 @@ import './index.css'
 import App from './App.tsx'
 import { GeneratedRecipesProvider } from './context/GeneratedRecipesContext'
 import { PantryScanProvider } from './context/PantryScanContext'
+import { AuthProvider } from "./context/AuthContext";
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <PantryScanProvider>
-        <GeneratedRecipesProvider>
-          <App />
-        </GeneratedRecipesProvider>
-      </PantryScanProvider>
+      <AuthProvider>
+        <PantryScanProvider>
+          <GeneratedRecipesProvider>
+            <App />
+          </GeneratedRecipesProvider>
+        </PantryScanProvider>
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 )
