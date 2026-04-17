@@ -21,11 +21,7 @@ export default function App() {
         <Route path="/recipe/:recipeId" element={<RecipeDetailScreen />} />
         <Route
           path="/saved"
-          element={
-            <ProtectedRoute>
-              <PlaceholderScreen title="Saved" description="Saved recipes will appear here." />
-            </ProtectedRoute>
-          }
+          element={<PlaceholderScreen title="Saved" description="Saved recipes will appear here." />}
         />
 
         <Route path="/profile" element={<Profile />} />
