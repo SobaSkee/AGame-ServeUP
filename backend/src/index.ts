@@ -105,7 +105,7 @@ app.post('/api/pantry/detect', upload.single('image'), async (req: Request, res:
       .filter((n) => n.length > 0)
 
     const userIdRaw = typeof req.body?.userId === 'string' ? req.body.userId.trim() : ''
-    const scans = collections.ingredientScans
+    const scans = collections.ingredient_scans;
     const shouldPersist = Boolean(scans && userIdRaw && ObjectId.isValid(userIdRaw))
 
     if (!shouldPersist) {

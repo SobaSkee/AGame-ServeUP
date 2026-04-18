@@ -4,9 +4,10 @@ import { Document, ObjectId } from "mongodb";
 export default class IngredientScan implements Document {
     [key: string]: unknown;
     constructor(
-        public created_at: Date, 
-        public ingredients_found: string[],
         public user_id: UserId_FK, 
+        public image_url: string,
+        public ingredients_detected: string[],
+        public created_at: Date, 
         public scan_id?: ObjectId
     ) {}
 }

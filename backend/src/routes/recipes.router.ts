@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import { ObjectId } from "mongodb";
-import { serveup_db_collections } from "../services/database.service";
+import { collections } from "../services/database.service";
 import Recipe from "../models/recipe";
 
 export const recipesRouter = express.Router();
@@ -34,7 +34,7 @@ recipesRouter.get("/:id", async (req: Request, res: Response) => {
 	}
 	const id = req?.params?.id;
 	try {
-		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
+		if (!collections.recipes) throw new Error("Could not bind to recipes collection");
 
 		const query = { _id: new ObjectId(id) };
 		const recipe = await recipesCollection.findOne(query);
@@ -56,7 +56,7 @@ recipesRouter.post("/", async (req: Request, res: Response) => {
 		return;
 	}
 	try {
-		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
+		if (!collections.recipes) throw new Error("Could not bind to recipes collection");
 
 		const newRecipe = req.body as Recipe;
 		const result = await recipesCollection.insertOne(newRecipe);
@@ -79,7 +79,7 @@ recipesRouter.put("/:id", async (req: Request, res: Response) => {
 	}
 	const id = req?.params?.id;
 	try {
-		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
+		if (!collections.recipes) throw new Error("Could not bind to recipes collection");
 
 		const updatedRecipe: Recipe = req.body as Recipe;
 		const query = { _id: new ObjectId(id) };
@@ -103,7 +103,7 @@ recipesRouter.delete("/:id", async (req: Request, res: Response) => {
 	}
 	const id = req?.params?.id;
 	try {
-		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
+		if (!collections.recipes) throw new Error("Could not bind to recipes collection");
 
 		const query = { _id: new ObjectId(id) };
 		const result = await recipesCollection.deleteOne(query);
