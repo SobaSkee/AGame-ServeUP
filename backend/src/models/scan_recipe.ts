@@ -7,6 +7,6 @@ export default class ScanRecipe implements Document {
         public created_at: Date, 
         public scan_id: IngredientScanId_FK, 
         public recipe_id: RecipeId_FK,
-        public scanrecipe_id?: ObjectId
+        public _id?: ObjectId
     ) {}
 }

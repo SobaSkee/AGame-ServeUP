@@ -8,6 +8,6 @@ export default class IngredientScan implements Document {
         public image_url: string,
         public ingredients_detected: string[],
         public created_at: Date, 
-        public scan_id?: ObjectId
+        public _id?: ObjectId
     ) {}
 }

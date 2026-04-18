@@ -1,18 +1,13 @@
 import { Document, ObjectId } from "mongodb";
 
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  password: string;
-}
-
-export default class DbUser implements Document {
+export default class User implements Document {
     [key: string]: unknown;
 	constructor(
         public created_at: Date, 
-        public last_login: Date, 
+        public last_login: Date | null, 
+        public name: string, 
 		public email: string, 
-        public user_id?: ObjectId
+        public password: string,
+        public _id?: ObjectId
 	) {}
 }
