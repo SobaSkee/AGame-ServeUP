@@ -7,7 +7,7 @@ export default class Session implements Document {
         public created_at: Date, 
         public expiration: Date,
         public token: string,
-        public user_id: UserId_FK,
+        public user_id: ObjectId,
         public _id?: ObjectId
     ) {}
 }

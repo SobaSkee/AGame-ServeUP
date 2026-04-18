@@ -36,7 +36,7 @@ export async function connectToDatabase() {
 	console.log("Successfully connected to database");
 
 	collections.users = db.collection(process.env.USERS_COLLECTION_NAME);
-	collections.sessions = db.collection(process.env.USERS_COLLECTION_NAME);
+	collections.sessions = db.collection(process.env.SESSIONS_COLLECTION_NAME);
 	collections.recipes = db.collection(process.env.RECIPES_COLLECTION_NAME);
 	collections.saved_recipes = db.collection(process.env.SAVED_RECIPES_COLLECTION_NAME);
 	collections.ingredient_scans = db.collection(process.env.INGREDIENT_SCANS_COLLECTION_NAME);

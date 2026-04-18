@@ -25,9 +25,7 @@ export const loginUser = async (email: string, password: string) : Promise<{user
   if (!match) throw new Error("Invalid credentials");
 
   var token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, { expiresIn: "7d", });
-  if (await sessionTokenExists(token)) { throw new Error("Failed to generate session token"); }
-
-  const result = await createNewSession(token, user._id);
+  const result = await createNewSession(token, user._id); // Will create new session if one with this signature does not already exist, or will update it if it does
   if (!result.acknowledged) throw new Error("Failed to generate session token");
 
   return { user, token };

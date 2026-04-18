@@ -59,7 +59,11 @@ router.get("/me", async (req, res) => {
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
     const decoded_user_id = new ObjectId(decoded.id);
 
-    if (!(await validateSession(token, decoded_user_id))) return res.status(401).json({ message: "Invalid session" });
+    const valid_session = await validateSession(token, decoded_user_id);
+    // if (valid_session) console.log("Validated session for user %s", decoded.id);
+    // else console.log("Failed to validate session for user %s", decoded.id);
+
+    if (!valid_session) return res.status(401).json({ message: "Invalid session" });
 
     const user = await findUserId(decoded_user_id);
     if (!user) { return res.status(404).json({ message: "User not found" }); }

@@ -21,8 +21,11 @@ export async function validateSession(token: string, user_id: ObjectId) : Promis
     const token_hash = hashRawToken(token);
 
     const session = await collections.sessions.findOne({token: token_hash});
+
     if (session === null) return false;
-    return session.user_id === user_id;
+
+    // console.log("Session user: %s, decoded user: %s", session.user_id.toString(), user_id.toString());
+    return session.user_id.equals(user_id);
 }
 
 export async function createNewSession(token: string, user_id: ObjectId) : Promise<InsertOneResult<Session>> {
