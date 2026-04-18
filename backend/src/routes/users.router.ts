@@ -1,18 +1,18 @@
 import express, { Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import { serveup_db_collections } from "../services/database.service";
-import Recipe from "../models/recipe";
+import User from "../models/user";
 
-export const recipesRouter = express.Router();
+export const usersRouter = express.Router();
 
-recipesRouter.use(express.json());
+usersRouter.use(express.json());
 
-recipesRouter.get("/", async (_req: Request, res: Response) => {
+usersRouter.get("/", async (_req: Request, res: Response) => {
 	try {
-		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
+		if (!serveup_db_collections.users) throw new Error("Could not bind to users collection");
 
-		const recipes = (await serveup_db_collections.recipes.find({}).toArray()) as Recipe[];
-		res.status(200).send(recipes);
+		const users = (await serveup_db_collections.users.find({}).toArray()) as User[];
+		res.status(200).send(users);
 	}
 	catch (error) {
 		var error_msg = (error instanceof Error) ? error.message : "An unknown error occurred";
@@ -21,15 +21,15 @@ recipesRouter.get("/", async (_req: Request, res: Response) => {
 	}
 });
 
-recipesRouter.get("/:id", async (req: Request, res: Response) => {
+usersRouter.get("/:id", async (req: Request, res: Response) => {
 	const id = req?.params?.id;
 	try {
-		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
+		if (!serveup_db_collections.users) throw new Error("Could not bind to users collection");
 
 		const query = { _id: new ObjectId(id) };
-		const recipe = (await serveup_db_collections.recipes.findOne(query)) as Recipe;
-		if (recipe) {
-			res.status(200).send(recipe);
+		const user = (await serveup_db_collections.users.findOne(query)) as User;
+		if (user) {
+			res.status(200).send(user);
 		}
 	}
 	catch (error) {
@@ -37,12 +37,12 @@ recipesRouter.get("/:id", async (req: Request, res: Response) => {
 	}
 });
 
-recipesRouter.post("/", async (req: Request, res: Response) => {
+usersRouter.post("/", async (req: Request, res: Response) => {
 	try {
-		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
+		if (!serveup_db_collections.users) throw new Error("Could not bind to users collection");
 
-		const newRecipe = req.body as Recipe;
-		const result = (await serveup_db_collections.recipes.insertOne(newRecipe));
+		const newUser = req.body as User;
+		const result = (await serveup_db_collections.users.insertOne(newUser));
 		result ? 
 			res.status(201).send(`Successfully created a new recipe with id ${result.insertedId}`) : 
 			res.status(500).send("Failed to create a new recipe");
@@ -54,17 +54,17 @@ recipesRouter.post("/", async (req: Request, res: Response) => {
 	}
 });
 
-recipesRouter.put("/:id", async (req: Request, res: Response) => {
+usersRouter.put("/:id", async (req: Request, res: Response) => {
 	const id = req?.params?.id;
 	try {
-		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
+		if (!serveup_db_collections.users) throw new Error("Could not bind to users collection");
 
-		const updatedRecipe: Recipe = req.body as Recipe;
+		const updatedUser: User = req.body as User;
 		const query = { _id: new ObjectId(id) };
-		const result = await serveup_db_collections.recipes.updateOne(query, { $set: updatedRecipe });
+		const result = await serveup_db_collections.users.updateOne(query, { $set: updatedUser });
 		result ?
 			res.status(200).send(`Successfully updated recipe with id ${id}`) :
-			res.status(304).send(`Recipe with id: ${id} not updated`);
+			res.status(304).send(`User with id: ${id} not updated`);
 	}
 	catch (error) {
 		var error_msg = (error instanceof Error) ? error.message : "An unknown error occurred";
@@ -73,13 +73,13 @@ recipesRouter.put("/:id", async (req: Request, res: Response) => {
 	}
 });
 
-recipesRouter.delete("/:id", async (req: Request, res: Response) => {
+usersRouter.delete("/:id", async (req: Request, res: Response) => {
 	const id = req?.params?.id;
 	try {
-		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
+		if (!serveup_db_collections.users) throw new Error("Could not bind to users collection");
 
 		const query = { _id: new ObjectId(id) };
-		const result = await serveup_db_collections.recipes.deleteOne(query);
+		const result = await serveup_db_collections.users.deleteOne(query);
 		if (result && result.deletedCount) {
 			res.status(202).send(`Successfully removed recipe with id ${id}`);
 		}
@@ -87,7 +87,7 @@ recipesRouter.delete("/:id", async (req: Request, res: Response) => {
 			res.status(400).send(`Failed to remove recipe with id ${id}`);
 		}
 		else if (!result.deletedCount) {
-			res.status(404).send(`Recipe with id ${id} does not exist`);
+			res.status(404).send(`User with id ${id} does not exist`);
 		}
 	}
 	catch (error) {
