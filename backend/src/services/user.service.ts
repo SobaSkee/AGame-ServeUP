@@ -27,5 +27,7 @@ export async function createNewUser(name: string, unique_email: string, hashed_p
         email: unique_email,
         password: hashed_pwd,
     };
+
+    // console.log("Running users insertion function...");
     return await collections.users.insertOne(new_user);
 }

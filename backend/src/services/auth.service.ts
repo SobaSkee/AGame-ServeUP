@@ -13,6 +13,7 @@ export const registerUser = async (name: string, email: string, password: string
   if (!collections.users) throw new Error("Users services are not available");
   if (await userEmailExists(email)) throw new Error("User with that email already exists");
 
+  // console.log("Creating User in db");
   const hashed_pwd = await bcrypt.hash(password, 10);
   return createNewUser(name, email, hashed_pwd);
 };

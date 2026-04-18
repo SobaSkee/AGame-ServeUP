@@ -49,7 +49,7 @@ export async function connectToDatabase() {
 	if (!collections.ingredient_scans) console.log("Failed to get 'ingredient_scans' collection");
 	if (!collections.scan_recipes) console.log("Failed to get 'scan_recipes' collection");
 
-	if (collections.sessions) await collections.users.createIndex({email: 1}, {unique: true}); // Indexes users by email for fast lookup
+	if (collections.users) await collections.users.createIndex({email: 1}, {unique: true}); // Indexes users by email for fast lookup
 	if (collections.sessions) await collections.sessions.createIndex({expiration: 1}, {expireAfterSeconds: 0}); // Ensures that expired sessions are deleted after expiration
 	if (collections.sessions) await collections.sessions.createIndex({token: 1}, {unique: true}); // Indexes sessions by token so they are fast to look up
 }

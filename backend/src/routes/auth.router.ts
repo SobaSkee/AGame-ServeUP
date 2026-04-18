@@ -13,7 +13,9 @@ router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
+    // console.log("Registering new user");
     const result = await registerUser(name, email, password);
+    // console.log("Success!");
     if (!result.acknowledged) throw new Error("Failed to register user");
     const user = await findUserId(result.insertedId);
     if (!user) throw new Error("Failed to find user data after registration");
