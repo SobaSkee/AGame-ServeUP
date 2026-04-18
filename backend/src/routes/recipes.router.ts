@@ -7,30 +7,42 @@ export const recipesRouter = express.Router();
 
 recipesRouter.use(express.json());
 
-recipesRouter.get("/", async (_req: Request, res: Response) => {
-	try {
-		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
+function getErrorMessage(error: unknown): string {
+	return error instanceof Error ? error.message : String(error);
+}
 
-		const recipes = (await serveup_db_collections.recipes.find({}).toArray()) as Recipe[];
+recipesRouter.get("/", async (_req: Request, res: Response) => {
+	const recipesCollection = collections.recipes;
+	if (!recipesCollection) {
+		res.status(503).send("Recipes collection is not available");
+		return;
+	}
+	try {
+		const recipes = await recipesCollection.find({}).toArray();
 		res.status(200).send(recipes);
 	}
 	catch (error) {
-		var error_msg = (error instanceof Error) ? error.message : "An unknown error occurred";
-		console.error(error_msg);
-		res.status(500).send(error_msg);
+		res.status(500).send(getErrorMessage(error));
 	}
 });
 
 recipesRouter.get("/:id", async (req: Request, res: Response) => {
+	const recipesCollection = collections.recipes;
+	if (!recipesCollection) {
+		res.status(503).send("Recipes collection is not available");
+		return;
+	}
 	const id = req?.params?.id;
 	try {
 		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
 
 		const query = { _id: new ObjectId(id) };
-		const recipe = (await serveup_db_collections.recipes.findOne(query)) as Recipe;
+		const recipe = await recipesCollection.findOne(query);
 		if (recipe) {
 			res.status(200).send(recipe);
+			return;
 		}
+		res.status(404).send(`Unable to find matching document with id: ${req.params.id}`);
 	}
 	catch (error) {
 		res.status(404).send(`Unable to find matching document with id: ${req.params.id}`);
@@ -38,11 +50,16 @@ recipesRouter.get("/:id", async (req: Request, res: Response) => {
 });
 
 recipesRouter.post("/", async (req: Request, res: Response) => {
+	const recipesCollection = collections.recipes;
+	if (!recipesCollection) {
+		res.status(503).send("Recipes collection is not available");
+		return;
+	}
 	try {
 		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
 
 		const newRecipe = req.body as Recipe;
-		const result = (await serveup_db_collections.recipes.insertOne(newRecipe));
+		const result = await recipesCollection.insertOne(newRecipe);
 		result ? 
 			res.status(201).send(`Successfully created a new recipe with id ${result.insertedId}`) : 
 			res.status(500).send("Failed to create a new recipe");
@@ -55,13 +72,18 @@ recipesRouter.post("/", async (req: Request, res: Response) => {
 });
 
 recipesRouter.put("/:id", async (req: Request, res: Response) => {
+	const recipesCollection = collections.recipes;
+	if (!recipesCollection) {
+		res.status(503).send("Recipes collection is not available");
+		return;
+	}
 	const id = req?.params?.id;
 	try {
 		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
 
 		const updatedRecipe: Recipe = req.body as Recipe;
 		const query = { _id: new ObjectId(id) };
-		const result = await serveup_db_collections.recipes.updateOne(query, { $set: updatedRecipe });
+		const result = await recipesCollection.updateOne(query, { $set: updatedRecipe });
 		result ?
 			res.status(200).send(`Successfully updated recipe with id ${id}`) :
 			res.status(304).send(`Recipe with id: ${id} not updated`);
@@ -74,12 +96,17 @@ recipesRouter.put("/:id", async (req: Request, res: Response) => {
 });
 
 recipesRouter.delete("/:id", async (req: Request, res: Response) => {
+	const recipesCollection = collections.recipes;
+	if (!recipesCollection) {
+		res.status(503).send("Recipes collection is not available");
+		return;
+	}
 	const id = req?.params?.id;
 	try {
 		if (!serveup_db_collections.recipes) throw new Error("Could not bind to recipes collection");
 
 		const query = { _id: new ObjectId(id) };
-		const result = await serveup_db_collections.recipes.deleteOne(query);
+		const result = await recipesCollection.deleteOne(query);
 		if (result && result.deletedCount) {
 			res.status(202).send(`Successfully removed recipe with id ${id}`);
 		}
