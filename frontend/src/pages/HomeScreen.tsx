@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+type RecentRecipe = { id: string; title: string }
 import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import QuickActionCards from '../components/home/QuickActionCards'
@@ -17,6 +18,16 @@ type DetectedIngredient = {
 }
 
 export default function HomeScreen() {
+  const [recentRecipes, setRecentRecipes] = useState<RecentRecipe[]>([])
+
+  useEffect(() => {
+    const data = localStorage.getItem('recentRecipes')
+    if (data) {
+      try {
+        setRecentRecipes(JSON.parse(data))
+      } catch {}
+    }
+  }, [])
   const navigate = useNavigate()
   const { queuePantryFromScan } = usePantryScan()
   const [pantryScanning, setPantryScanning] = useState(false)
@@ -117,6 +128,24 @@ export default function HomeScreen() {
           </section>
 
           <SuggestedRecipes recipes={suggestedRecipes} />
+
+          {/* Smallest useful change: Working recently viewed recipes */}
+          <section className="mt-6">
+            <h2 className="text-lg font-semibold mb-2">Recently Viewed Recipes</h2>
+            {recentRecipes.length === 0 ? (
+              <p className="text-sm text-gray-500">You haven't viewed any recipes yet.</p>
+            ) : (
+              <ul className="space-y-1">
+                {recentRecipes.slice(0, 3).map((r) => (
+                  <li key={r.id}>
+                    <a href={`/recipe/${r.id}`} className="text-primary underline">
+                      {r.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
         </main>
       </div>
     </div>
