@@ -129,7 +129,6 @@ export default function HomeScreen() {
 
           <SuggestedRecipes recipes={suggestedRecipes} />
 
-          {/* Smallest useful change: Working recently viewed recipes */}
           <section className="mt-6">
             <h2 className="text-lg font-semibold mb-2">Recently Viewed Recipes</h2>
             {recentRecipes.length === 0 ? (

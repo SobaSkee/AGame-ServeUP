@@ -26,7 +26,7 @@ function servingsLine(recipe: GeneratedRecipe): string {
   return '—'
 }
 
-/** Split instruction into a short title + body when the text looks like a heading + steps. */
+
 function instructionBlocks(recipe: GeneratedRecipe): { title: string; body: string }[] {
   const rows = [...(recipe.instructions ?? [])].sort((a, b) => a.step - b.step)
   if (rows.length === 0) {
@@ -59,7 +59,7 @@ export default function RecipeDetailScreen() {
   const navigate = useNavigate()
   const { recipes } = useGeneratedRecipes()
 
-  // Save to recently viewed recipes in localStorage
+
   useEffect(() => {
     if (!recipe) return
     const data = localStorage.getItem('recentRecipes')
@@ -69,7 +69,7 @@ export default function RecipeDetailScreen() {
         arr = JSON.parse(data)
       } catch {}
     }
-    // Remove if already exists
+
     arr = arr.filter((r) => r.id !== recipe.id)
     arr.unshift({ id: recipe.id, title: recipe.title })
     if (arr.length > 10) arr = arr.slice(0, 10)
@@ -84,7 +84,7 @@ export default function RecipeDetailScreen() {
     [recipes, recipeId]
   )
 
-  // Save to recently viewed recipes in localStorage
+
   useEffect(() => {
     if (!recipe) return
     const data = localStorage.getItem('recentRecipes')
@@ -94,7 +94,7 @@ export default function RecipeDetailScreen() {
         arr = JSON.parse(data)
       } catch {}
     }
-    // Remove if already exists
+
     arr = arr.filter((r) => r.id !== recipe.id)
     arr.unshift({ id: recipe.id, title: recipe.title })
     if (arr.length > 10) arr = arr.slice(0, 10)
@@ -131,7 +131,7 @@ export default function RecipeDetailScreen() {
 
   return (
     <div className="min-h-dvh bg-white pb-36 font-[Inter,ui-sans-serif,system-ui,sans-serif] text-[#0f172a] antialiased">
-      {/* Hero: dish image + white top bar + gradient (matches recipe.pen) */}
+
       <section className="relative h-[min(419px,52vh)] w-full overflow-hidden">
         {recipe.imageUrl ? (
           <img
@@ -273,7 +273,7 @@ export default function RecipeDetailScreen() {
         </div>
       </div>
 
-      {/* Fixed CTA — above app BottomNav (matches recipe.pen strip) */}
+
       <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 border-t border-[#f1f5f9] bg-[#ffffffcf] px-6 pb-2 pt-4 backdrop-blur-md md:px-10">
         <div className="mx-auto max-w-lg md:max-w-3xl lg:max-w-4xl flex flex-col gap-2">
           <button
