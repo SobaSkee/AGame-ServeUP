@@ -8,6 +8,12 @@ export async function userEmailExists(email: string) : Promise<boolean> {
 	return user !== null;
 }
 
+export async function userIdExists(id: ObjectId) : Promise<boolean> {
+	if (!collections.users) throw new Error("Users services are not available");
+	const user = await collections.users.findOne({_id: id});
+	return user !== null;
+}
+
 export async function findUserEmail(email: string) : Promise<WithId<User> | null> {
     if (!collections.users) throw new Error("Users services are not available");
     return collections.users.findOne({email: email});

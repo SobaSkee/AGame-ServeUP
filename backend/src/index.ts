@@ -12,6 +12,7 @@ import { collections, connectToDatabase } from "./services/database.service.js"
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.router";
 import { savedRecipesRouter } from "./routes/savedrecipes.router.ts"
+import { pantriesRouter } from './routes/pantry.router.ts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -176,7 +177,8 @@ app.get('/api/ingredients/suggest-recipes', async (req: Request, res: Response) 
  */
 const HOST = '0.0.0.0'
 connectToDatabase().then(() => {
-	if (collections.scan_recipes) { app.use("/api/recipes", savedRecipesRouter); }
+	if (collections.saved_recipes) { app.use("/api/recipes", savedRecipesRouter); }
+  if (collections.pantries) { app.use("/api/pantry/update", pantriesRouter); }
 	app.listen(PORT, HOST, () => {
 		console.log(`🍽️  ServeUP Backend on http://localhost:${PORT} (LAN: all interfaces)`);
 		console.log(`📝 API Docs: http://localhost:${PORT}/api/pantry/detect (POST with image)`,);

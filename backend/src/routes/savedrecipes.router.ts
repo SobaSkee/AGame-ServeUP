@@ -23,7 +23,7 @@ savedRecipesRouter.get("/", async (req: Request, res: Response) => {
 		const saved_recipes = await getUserSavedRecipes(session_info.user);
 		const recipes = await formatSavedRecipesForFrontendExport(saved_recipes, session_info.user);
 
-		res.status(200).json({
+		return res.status(200).json({
 			success: true,
 			recipes: recipes,
 		});
@@ -51,7 +51,7 @@ savedRecipesRouter.post("/", async (req: Request, res: Response) => {
 		if (!result) return res.status(400).json({success: false, error: "Could not save recipe"});
 		if (!result.acknowledged) return res.status(503).json({success: false, error: "Could not save recipe"});
 
-		res.status(200);
+		return res.status(200);
 	} 
 	catch(error) {
 		const errorMessage = error instanceof Error ? error.message : String(error)
@@ -77,7 +77,7 @@ savedRecipesRouter.delete("/", async (req: Request, res: Response) => {
 		if (!result.acknowledged) return res.status(503).json({success: false, error: "Could not unsave recipe"});
 		if (result.deletedCount == 0) return res.status(204).json({success: false, error: "Recipe not found"});
 
-		res.status(200);
+		return res.status(200);
 	} 
 	catch(error) {
 		const errorMessage = error instanceof Error ? error.message : String(error)
