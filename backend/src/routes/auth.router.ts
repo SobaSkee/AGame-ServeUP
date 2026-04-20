@@ -2,8 +2,9 @@ import express from "express";
 import jwt from "jsonwebtoken";
 import { registerUser, loginUser } from "../services/auth.service";
 import { findUserId } from "../services/user.service";
+import { createNewPantry } from "../services/pantry.service";
 import { ObjectId } from "mongodb";
-import { validateSession } from "../services/session.service";
+import { validateSession, validateTokenCookie } from "../services/session.service";
 
 const router = express.Router();
 
@@ -13,12 +14,11 @@ router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
-    // console.log("Registering new user");
     const result = await registerUser(name, email, password);
-    // console.log("Success!");
     if (!result.acknowledged) throw new Error("Failed to register user");
     const user = await findUserId(result.insertedId);
     if (!user) throw new Error("Failed to find user data after registration");
+    await createNewPantry(user._id);
 
     res.json({
       id: user._id,
@@ -60,10 +60,7 @@ router.get("/me", async (req, res) => {
 
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
     const decoded_user_id = new ObjectId(decoded.id);
-
     const valid_session = await validateSession(token, decoded_user_id);
-    // if (valid_session) console.log("Validated session for user %s", decoded.id);
-    // else console.log("Failed to validate session for user %s", decoded.id);
 
     if (!valid_session) return res.status(401).json({ message: "Invalid session" });
 

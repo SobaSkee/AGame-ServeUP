@@ -1,98 +1,89 @@
 import express, { Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../services/database.service";
-import SavedRecipe from "../models/saved_recipes";
+import ScanRecipe from "../models/scan_recipe";
+import { validateTokenCookie } from "../services/session.service";
+import { RecipeGenerationResult, Recipe } from '../services/recipeGeneration';
+import { findUserId } from "../services/user.service";
+import { getUserSavedRecipes, formatSavedRecipesForFrontendExport, saveRecipe, unsaveRecipe } from "../services/savedRecipe.service";
 
 export const savedRecipesRouter = express.Router();
-
 savedRecipesRouter.use(express.json());
 
-savedRecipesRouter.get("/", async (_req: Request, res: Response) => {
+savedRecipesRouter.get("/", async (req: Request, res: Response) => {
 	try {
-		if (!collections.saved_recipes) throw new Error("Could not bind to saved_recipes collection");
+		const token = req.cookies.token;
+		if (!token) { return res.status(401).json({ message: "Not logged in" }); }
+		const session_info = await validateTokenCookie(token);
+		if (!session_info.valid) return res.status(401).json({ message: "Invalid session" });
+		if (!session_info.user) return res.status(401).json({ message: "Invalid user" });
+		const user = await findUserId(session_info.user);
+		if (!user) { return res.status(404).json({ message: "User not found" }); }
 
-		const saved_recipes = (await collections.saved_recipes.find({}).toArray()) as SavedRecipe[];
-		res.status(200).send(saved_recipes);
-	}
-	catch (error) {
-		var error_msg = (error instanceof Error) ? error.message : "An unknown error occurred";
-		console.error(error_msg);
-		res.status(500).send(error_msg);
-	}
-});
+		const saved_recipes = await getUserSavedRecipes(session_info.user);
+		const recipes = await formatSavedRecipesForFrontendExport(saved_recipes, session_info.user);
 
-savedRecipesRouter.get("/:id", async (req: Request, res: Response) => {
-	const id = req?.params?.id;
-	try {
-		if (!collections.saved_recipes) throw new Error("Could not bind to saved_recipes collection");
-
-		const query = { _id: new ObjectId(id) };
-		const saved_recipe = (await collections.saved_recipes.findOne(query)) as SavedRecipe;
-		if (saved_recipe) {
-			res.status(200).send(saved_recipe);
-		}
-	}
-	catch (error) {
-		res.status(404).send(`Unable to find matching document with id: ${req.params.id}`);
+		res.status(200).json({
+			success: true,
+			recipes: recipes,
+		});
+	} 
+	catch(error) {
+		const errorMessage = error instanceof Error ? error.message : String(error)
+		res.status(500).json({
+			success: false,
+			error: errorMessage,
+		});
 	}
 });
 
 savedRecipesRouter.post("/", async (req: Request, res: Response) => {
 	try {
-		if (!collections.saved_recipes) throw new Error("Could not bind to saved_recipes collection");
+		const token = req.cookies.token;
+		if (!token) { return res.status(401).json({ message: "Not logged in" }); }
+		const session_info = await validateTokenCookie(token);
+		if (!session_info.valid) return res.status(401).json({ message: "Invalid session" });
+		if (!session_info.user) return res.status(401).json({ message: "Invalid user" });
+		const user = await findUserId(session_info.user);
+		if (!user) { return res.status(404).json({ message: "User not found" }); }
 
-		const newUser = req.body as SavedRecipe;
-		const result = (await collections.saved_recipes.insertOne(newUser));
-		result ? 
-			res.status(201).send(`Successfully created a new recipe with id ${result.insertedId}`) : 
-			res.status(500).send("Failed to create a new recipe");
-	}
-	catch (error) {
-		var error_msg = (error instanceof Error) ? error.message : "An unknown error occurred";
-		console.error(error_msg);
-		res.status(400).send(error_msg);
-	}
-});
+		const result = await saveRecipe(session_info.user, req.body as Recipe);
+		if (!result) return res.status(400).json({success: false, error: "Could not save recipe"});
+		if (!result.acknowledged) return res.status(503).json({success: false, error: "Could not save recipe"});
 
-savedRecipesRouter.put("/:id", async (req: Request, res: Response) => {
-	const id = req?.params?.id;
-	try {
-		if (!collections.saved_recipes) throw new Error("Could not bind to saved_recipes collection");
-
-		const updatedUser: SavedRecipe = req.body as SavedRecipe;
-		const query = { _id: new ObjectId(id) };
-		const result = await collections.saved_recipes.updateOne(query, { $set: updatedUser });
-		result ?
-			res.status(200).send(`Successfully updated recipe with id ${id}`) :
-			res.status(304).send(`SavedRecipe with id: ${id} not updated`);
-	}
-	catch (error) {
-		var error_msg = (error instanceof Error) ? error.message : "An unknown error occurred";
-		console.error(error_msg);
-		res.status(400).send(error_msg);
+		res.status(200);
+	} 
+	catch(error) {
+		const errorMessage = error instanceof Error ? error.message : String(error)
+		res.status(500).json({
+			success: false,
+			error: errorMessage,
+		});
 	}
 });
 
-savedRecipesRouter.delete("/:id", async (req: Request, res: Response) => {
-	const id = req?.params?.id;
+savedRecipesRouter.delete("/", async (req: Request, res: Response) => {
 	try {
-		if (!collections.saved_recipes) throw new Error("Could not bind to saved_recipes collection");
+		const token = req.cookies.token;
+		if (!token) { return res.status(401).json({ message: "Not logged in" }); }
+		const session_info = await validateTokenCookie(token);
+		if (!session_info.valid) return res.status(401).json({ message: "Invalid session" });
+		if (!session_info.user) return res.status(401).json({ message: "Invalid user" });
+		const user = await findUserId(session_info.user);
+		if (!user) { return res.status(404).json({ message: "User not found" }); }
 
-		const query = { _id: new ObjectId(id) };
-		const result = await collections.saved_recipes.deleteOne(query);
-		if (result && result.deletedCount) {
-			res.status(202).send(`Successfully removed recipe with id ${id}`);
-		}
-		else if (!result) {
-			res.status(400).send(`Failed to remove recipe with id ${id}`);
-		}
-		else if (!result.deletedCount) {
-			res.status(404).send(`SavedRecipe with id ${id} does not exist`);
-		}
-	}
-	catch (error) {
-		var error_msg = (error instanceof Error) ? error.message : "An unknown error occurred";
-		console.error(error_msg);
-		res.status(400).send(error_msg);
+		const recipe = req.body as Recipe;
+		const result = await unsaveRecipe(session_info.user, recipe.id);
+		if (!result.acknowledged) return res.status(503).json({success: false, error: "Could not unsave recipe"});
+		if (result.deletedCount == 0) return res.status(204).json({success: false, error: "Recipe not found"});
+
+		res.status(200);
+	} 
+	catch(error) {
+		const errorMessage = error instanceof Error ? error.message : String(error)
+		res.status(500).json({
+			success: false,
+			error: errorMessage,
+		});
 	}
 });

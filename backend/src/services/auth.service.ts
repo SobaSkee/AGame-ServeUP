@@ -3,8 +3,8 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../models/user";
 import { collections } from "./database.service.ts"
-import { WithId, InsertOneResult } from "mongodb"
-import { userEmailExists, findUserEmail, createNewUser } from "./user.service.ts";
+import { WithId, InsertOneResult, } from "mongodb"
+import { userEmailExists, findUserEmail, createNewUser, updateLastLogin} from "./user.service.ts";
 import { sessionTokenExists, createNewSession } from "./session.service.ts";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
@@ -28,6 +28,8 @@ export const loginUser = async (email: string, password: string) : Promise<{user
   var token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, { expiresIn: "7d", });
   const result = await createNewSession(token, user._id); // Will create new session if one with this signature does not already exist, or will update it if it does
   if (!result.acknowledged) throw new Error("Failed to generate session token");
+
+  await updateLastLogin(user._id);
 
   return { user, token };
 };

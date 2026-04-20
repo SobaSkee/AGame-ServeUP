@@ -1,5 +1,5 @@
 import { collections } from "./database.service.ts"
-import { InsertOneResult, WithId, ObjectId } from "mongodb"
+import { UpdateResult, InsertOneResult, WithId, ObjectId } from "mongodb"
 import User from "../models/user.ts"
 
 export async function userEmailExists(email: string) : Promise<boolean> {
@@ -30,4 +30,9 @@ export async function createNewUser(name: string, unique_email: string, hashed_p
 
     // console.log("Running users insertion function...");
     return await collections.users.insertOne(new_user);
+}
+
+export async function updateLastLogin(id: ObjectId) : Promise<UpdateResult<User>> {
+    if (!collections.users) throw new Error("Users services are not available");
+    return await collections.users.updateOne({_id: id}, {$set: {last_login: new Date()}});
 }

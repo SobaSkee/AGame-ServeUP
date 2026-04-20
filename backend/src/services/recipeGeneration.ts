@@ -1,11 +1,11 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-interface RecipeIngredient {
+export interface RecipeIngredient {
   name: string
   amount?: string
 }
 
-interface RecipeInstruction {
+export interface RecipeInstruction {
   step: number
   instruction: string
 }
@@ -16,7 +16,7 @@ export interface Recipe {
   description: string
   ingredients: RecipeIngredient[]
   instructions: RecipeInstruction[]
-  matchedIngredients: string[]
+  matchedIngredients?: string[]
   prepTime: string
   cookTime?: string
   servings?: string

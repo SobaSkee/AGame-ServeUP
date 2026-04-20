@@ -11,11 +11,7 @@ import { generateRecipesFromIngredients } from './services/recipeGeneration.js'
 import { collections, connectToDatabase } from "./services/database.service.js"
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.router";
-import { usersRouter } from "./routes/users.router.ts"
-import { recipesRouter } from "./routes/recipes.router.ts"
 import { savedRecipesRouter } from "./routes/savedrecipes.router.ts"
-import { ingredientScansRouter } from "./routes/ingredientscans.router.ts"
-import { scanRecipesRouter } from "./routes/scanrecipes.router.ts"
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -180,9 +176,7 @@ app.get('/api/ingredients/suggest-recipes', async (req: Request, res: Response) 
  */
 const HOST = '0.0.0.0'
 connectToDatabase().then(() => {
-	if (collections.recipes) {
-		app.use("/recipes", recipesRouter);
-	}
+	if (collections.scan_recipes) { app.use("/api/recipes", savedRecipesRouter); }
 	app.listen(PORT, HOST, () => {
 		console.log(`🍽️  ServeUP Backend on http://localhost:${PORT} (LAN: all interfaces)`);
 		console.log(`📝 API Docs: http://localhost:${PORT}/api/pantry/detect (POST with image)`,);

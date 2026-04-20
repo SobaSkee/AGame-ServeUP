@@ -2,8 +2,11 @@ import { collections } from "./database.service.ts"
 import { InsertOneResult, WithId, ObjectId } from "mongodb"
 import Session from "../models/session.ts"
 import crypto from "crypto"
+import jwt from "jsonwebtoken";
 
 const ONE_WEEK_MS = 604800000;
+
+const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
 function hashRawToken(raw_token: string) : string {
     return crypto.createHash('sha256').update(raw_token).digest('hex');
@@ -38,4 +41,11 @@ export async function createNewSession(token: string, user_id: ObjectId) : Promi
         user_id: user_id
     };
     return await collections.sessions.insertOne(new_session);
+}
+
+export async function validateTokenCookie(token: any) : Promise<{valid: boolean, user: ObjectId | null}> {
+    if (!token) return {valid: false, user: null};
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    const decoded_user_id = new ObjectId(decoded.id);
+    return {valid: await validateSession(token, decoded_user_id), user: decoded_user_id};
 }
