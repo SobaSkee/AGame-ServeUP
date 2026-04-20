@@ -95,15 +95,9 @@ export default function RecipeDetailScreen() {
   const [saved, setSaved] = useState(false)
 
   const allIngredientsMatched = (recipe?.matchedIngredients?.length ?? 0) === (recipe?.ingredients?.length ?? 0)
-  const [userOverrideShowInstructions, setUserOverrideShowInstructions] = useState(false)
 
-  // Determine if instructions should be shown
-  const shouldShowInstructions = allIngredientsMatched || userOverrideShowInstructions
-
-  // Reset the override when changing recipes
-  useEffect(() => {
-    setUserOverrideShowInstructions(false)
-  }, [recipe?.id])
+  // Instructions are now shown by default
+  const shouldShowInstructions = true
 
   const blocks = useMemo(() => (recipe ? instructionBlocks(recipe) : []), [recipe])
 
@@ -302,21 +296,12 @@ export default function RecipeDetailScreen() {
             </section>
           )}
 
-          {!shouldShowInstructions && !allIngredientsMatched && (
+          {!allIngredientsMatched && (
             <div className="mt-10 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
               <h3 className="text-lg font-semibold text-yellow-800 mb-2">Missing ingredients</h3>
-              <p className="text-yellow-700 mb-4">
-                You don't have all the required ingredients for this recipe. Instructions are hidden to ensure a successful cooking experience.
+              <p className="text-yellow-700">
+                You don't have all the required ingredients for this recipe, but you can still view the instructions below.
               </p>
-              <button
-                onClick={() => {
-                  console.log('Show instructions clicked, setting override to true')
-                  setUserOverrideShowInstructions(true)
-                }}
-                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
-              >
-                Show instructions anyway
-              </button>
             </div>
           )}
 

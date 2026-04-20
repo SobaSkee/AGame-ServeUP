@@ -70,6 +70,13 @@ interface SpoonacularRecipeInfo {
   readyInMinutes?: number
   cookingMinutes?: number
   preparationMinutes?: number
+  analyzedInstructions?: Array<{
+    name?: string
+    steps?: Array<{
+      number: number
+      step: string
+    }>
+  }>
 }
 
 /**
@@ -119,12 +126,26 @@ function mapSpoonItemToRecipe(item: SpoonacularFindItem, timeInfo?: SpoonacularR
   /** Shown on recipe cards (time); ingredient count is separate on the client. */
   const prepTime = formatRecipeCardTime(timeInfo)
 
+  const parsedInstructions: RecipeInstruction[] = []
+  if (timeInfo?.analyzedInstructions) {
+    let globalStep = 1
+    for (const group of timeInfo.analyzedInstructions) {
+      const groupName = group.name ? `${group.name}:\n` : ''
+      for (const s of (group.steps || [])) {
+        parsedInstructions.push({
+          step: globalStep++,
+          instruction: groupName + String(s.step || '').trim()
+        })
+      }
+    }
+  }
+
   return {
     id: String(item.id),
     title: String(item.title || '').trim(),
     description,
     ingredients,
-    instructions: [],
+    instructions: parsedInstructions,
     matchedIngredients,
     prepTime,
     cookTime: undefined,
@@ -175,12 +196,20 @@ async function fetchSpoonacularInformationBulk(
       readyInMinutes?: number
       cookingMinutes?: number
       preparationMinutes?: number
+      analyzedInstructions?: Array<{
+        name?: string
+        steps?: Array<{
+          number: number
+          step: string
+        }>
+      }>
     }
     if (typeof r.id !== 'number') continue
     map.set(r.id, {
       readyInMinutes: r.readyInMinutes,
       cookingMinutes: r.cookingMinutes,
       preparationMinutes: r.preparationMinutes,
+      analyzedInstructions: r.analyzedInstructions,
     })
   }
 
@@ -362,17 +391,17 @@ Now generate 3 recipes using the provided ingredients:`
           description: String(r.description).trim(),
           ingredients: Array.isArray(r.ingredients)
             ? (r.ingredients as { name?: string; amount?: string }[]).map((ing) => ({
-                name: String(ing.name || '').trim(),
-                amount: ing.amount ? String(ing.amount).trim() : undefined,
-              }))
+              name: String(ing.name || '').trim(),
+              amount: ing.amount ? String(ing.amount).trim() : undefined,
+            }))
             : [],
           instructions: Array.isArray(r.instructions)
             ? (r.instructions as { step?: number; instruction?: string }[])
-                .map((inst) => ({
-                  step: parseInt(String(inst.step), 10) || 0,
-                  instruction: String(inst.instruction || '').trim(),
-                }))
-                .sort((a, b) => a.step - b.step)
+              .map((inst) => ({
+                step: parseInt(String(inst.step), 10) || 0,
+                instruction: String(inst.instruction || '').trim(),
+              }))
+              .sort((a, b) => a.step - b.step)
             : [],
           matchedIngredients: Array.isArray(r.matchedIngredients)
             ? (r.matchedIngredients as unknown[]).map((ing) => String(ing).trim())
