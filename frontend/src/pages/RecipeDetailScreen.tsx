@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useRef, useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeftIcon, BookmarkIcon, ClockIcon } from '@heroicons/react/24/outline'
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid'
@@ -26,7 +26,7 @@ function servingsLine(recipe: GeneratedRecipe): string {
   return '—'
 }
 
-/** Split instruction into a short title + body when the text looks like a heading + steps. */
+
 function instructionBlocks(recipe: GeneratedRecipe): { title: string; body: string }[] {
   const rows = [...(recipe.instructions ?? [])].sort((a, b) => a.step - b.step)
   if (rows.length === 0) {
@@ -58,13 +58,48 @@ export default function RecipeDetailScreen() {
   const { recipeId } = useParams<{ recipeId: string }>()
   const navigate = useNavigate()
   const { recipes } = useGeneratedRecipes()
+
+
+  useEffect(() => {
+    if (!recipe) return
+    const data = localStorage.getItem('recentRecipes')
+    let arr: { id: string; title: string }[] = []
+    if (data) {
+      try {
+        arr = JSON.parse(data)
+      } catch {}
+    }
+
+    arr = arr.filter((r) => r.id !== recipe.id)
+    arr.unshift({ id: recipe.id, title: recipe.title })
+    if (arr.length > 10) arr = arr.slice(0, 10)
+    localStorage.setItem('recentRecipes', JSON.stringify(arr))
+  }, [recipe])
   const instructionsRef = useRef<HTMLElement>(null)
   const [saved, setSaved] = useState(false)
+
 
   const recipe = useMemo(
     () => recipes.find((r) => r.id === recipeId) ?? null,
     [recipes, recipeId]
   )
+
+
+  useEffect(() => {
+    if (!recipe) return
+    const data = localStorage.getItem('recentRecipes')
+    let arr: { id: string; title: string }[] = []
+    if (data) {
+      try {
+        arr = JSON.parse(data)
+      } catch {}
+    }
+
+    arr = arr.filter((r) => r.id !== recipe.id)
+    arr.unshift({ id: recipe.id, title: recipe.title })
+    if (arr.length > 10) arr = arr.slice(0, 10)
+    localStorage.setItem('recentRecipes', JSON.stringify(arr))
+  }, [recipe])
 
   const blocks = useMemo(() => (recipe ? instructionBlocks(recipe) : []), [recipe])
 
@@ -96,7 +131,7 @@ export default function RecipeDetailScreen() {
 
   return (
     <div className="min-h-dvh bg-white pb-36 font-[Inter,ui-sans-serif,system-ui,sans-serif] text-[#0f172a] antialiased">
-      {/* Hero: dish image + white top bar + gradient (matches recipe.pen) */}
+
       <section className="relative h-[min(419px,52vh)] w-full overflow-hidden">
         {recipe.imageUrl ? (
           <img
@@ -238,16 +273,25 @@ export default function RecipeDetailScreen() {
         </div>
       </div>
 
-      {/* Fixed CTA — above app BottomNav (matches recipe.pen strip) */}
+
       <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 border-t border-[#f1f5f9] bg-[#ffffffcf] px-6 pb-2 pt-4 backdrop-blur-md md:px-10">
-        <div className="mx-auto max-w-lg md:max-w-3xl lg:max-w-4xl">
+        <div className="mx-auto max-w-lg md:max-w-3xl lg:max-w-4xl flex flex-col gap-2">
           <button
             type="button"
             onClick={onStartCooking}
             className="relative w-full overflow-hidden rounded-xl bg-[#10b981] py-4 text-center font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-base font-bold leading-normal text-white shadow-[0_4px_5.25px_-4px_rgba(16,185,129,0.2),0_10px_13.125px_-3px_rgba(16,185,129,0.2)] outline-none hover:opacity-[0.98] focus-visible:ring-2 focus-visible:ring-[#10b981]/40"
           >
-            Start Cooking
+            Scroll to Instructions
           </button>
+          {recipe.instructions && recipe.instructions.length > 0 && (
+            <button
+              type="button"
+              onClick={() => navigate(`/recipe/${recipe.id}/step/1`)}
+              className="relative w-full overflow-hidden rounded-xl bg-[#2563eb] py-4 text-center font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-base font-bold leading-normal text-white shadow-[0_4px_5.25px_-4px_rgba(37,99,235,0.2),0_10px_13.125px_-3px_rgba(37,99,235,0.2)] outline-none hover:opacity-[0.98] focus-visible:ring-2 focus-visible:ring-[#2563eb]/40"
+            >
+              Step-by-step Mode
+            </button>
+          )}
         </div>
       </div>
     </div>
