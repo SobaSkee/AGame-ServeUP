@@ -28,8 +28,10 @@ function servingsLine(recipe: GeneratedRecipe): string {
 
 
 function instructionBlocks(recipe: GeneratedRecipe): { title: string; body: string }[] {
-  const rows = [...(recipe.instructions ?? [])].sort((a, b) => a.step - b.step)
-  if (rows.length === 0) {
+  // Handle different instruction formats
+  let instructions = recipe.instructions ?? []
+  
+  if (!instructions || instructions.length === 0) {
     return [
       {
         title: 'No steps yet',
@@ -39,8 +41,18 @@ function instructionBlocks(recipe: GeneratedRecipe): { title: string; body: stri
       },
     ]
   }
+
+  const rows = [...instructions].sort((a, b) => {
+    const aStep = typeof a.step === 'number' ? a.step : parseInt(a.step as string, 10) || 0
+    const bStep = typeof b.step === 'number' ? b.step : parseInt(b.step as string, 10) || 0
+    return aStep - bStep
+  })
+
   return rows.map((row, i) => {
+    // Handle instruction property
     const text = String(row.instruction || '').trim()
+    if (!text) return { title: `Step ${i + 1}`, body: '—' }
+    
     const nl = text.indexOf('\n')
     if (nl > 0 && nl < 48) {
       const title = text.slice(0, nl).trim()
@@ -49,7 +61,7 @@ function instructionBlocks(recipe: GeneratedRecipe): { title: string; body: stri
     }
     return {
       title: `Step ${row.step || i + 1}`,
-      body: text || '—',
+      body: text,
     }
   })
 }
@@ -59,6 +71,10 @@ export default function RecipeDetailScreen() {
   const navigate = useNavigate()
   const { recipes } = useGeneratedRecipes()
 
+  const recipe = useMemo(
+    () => recipes.find((r) => r.id === recipeId) ?? null,
+    [recipes, recipeId]
+  )
 
   useEffect(() => {
     if (!recipe) return
@@ -78,28 +94,16 @@ export default function RecipeDetailScreen() {
   const instructionsRef = useRef<HTMLElement>(null)
   const [saved, setSaved] = useState(false)
 
+  const allIngredientsMatched = (recipe?.matchedIngredients?.length ?? 0) === (recipe?.ingredients?.length ?? 0)
+  const [userOverrideShowInstructions, setUserOverrideShowInstructions] = useState(false)
 
-  const recipe = useMemo(
-    () => recipes.find((r) => r.id === recipeId) ?? null,
-    [recipes, recipeId]
-  )
+  // Determine if instructions should be shown
+  const shouldShowInstructions = allIngredientsMatched || userOverrideShowInstructions
 
-
+  // Reset the override when changing recipes
   useEffect(() => {
-    if (!recipe) return
-    const data = localStorage.getItem('recentRecipes')
-    let arr: { id: string; title: string }[] = []
-    if (data) {
-      try {
-        arr = JSON.parse(data)
-      } catch {}
-    }
-
-    arr = arr.filter((r) => r.id !== recipe.id)
-    arr.unshift({ id: recipe.id, title: recipe.title })
-    if (arr.length > 10) arr = arr.slice(0, 10)
-    localStorage.setItem('recentRecipes', JSON.stringify(arr))
-  }, [recipe])
+    setUserOverrideShowInstructions(false)
+  }, [recipe?.id])
 
   const blocks = useMemo(() => (recipe ? instructionBlocks(recipe) : []), [recipe])
 
@@ -210,65 +214,111 @@ export default function RecipeDetailScreen() {
           </div>
 
           <section className="mt-8 flex flex-col gap-6">
-            <h2 className="font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-[12px] font-bold uppercase tracking-[0.06em] text-[#0f172a]">
-              Ingredients ({n})
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-[12px] font-bold uppercase tracking-[0.06em] text-[#0f172a]">
+                Ingredients ({n})
+              </h2>
+              {n > (recipe.matchedIngredients?.length ?? 0) && (
+                <span className="text-xs font-medium text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                  {n - (recipe.matchedIngredients?.length ?? 0)} missing
+                </span>
+              )}
+            </div>
             <ul className="flex flex-col gap-1">
-              {(recipe.ingredients ?? []).map((ing, idx) => (
-                <li
-                  key={`${ing.name}-${idx}`}
-                  className={`flex items-center gap-4 py-3 pl-0 pr-0 ${idx > 0 ? 'border-t border-[#f8fafc]' : ''}`}
-                >
-                  <div
-                    className="size-5 shrink-0 rounded-md border-2 border-[#cbd5e1] bg-white"
-                    aria-hidden
-                  />
-                  <div className="flex min-w-0 flex-1 items-baseline justify-between gap-4">
-                    <span className="font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-base font-medium text-[#1e293b]">
-                      {ing.name}
-                    </span>
-                    <span className="shrink-0 font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-[14px] font-normal text-[#64748b]">
-                      {ing.amount?.trim() || '—'}
-                    </span>
-                  </div>
-                </li>
-              ))}
+              {(recipe.ingredients ?? []).map((ing, idx) => {
+                const isMatched = recipe.matchedIngredients?.some(m => m.toLowerCase() === ing.name.toLowerCase()) ?? false
+                return (
+                  <li
+                    key={`${ing.name}-${idx}`}
+                    className={`flex items-center gap-4 py-3 pl-0 pr-0 ${idx > 0 ? 'border-t border-[#f8fafc]' : ''}`}
+                  >
+                    <div
+                      className={`size-5 shrink-0 rounded-md border-2 ${
+                        isMatched ? 'border-[#10b981] bg-[#10b981]' : 'border-[#cbd5e1] bg-white'
+                      }`}
+                      aria-hidden
+                    >
+                      {isMatched && (
+                        <svg className="w-3 h-3 text-white mx-auto mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    <div className="flex min-w-0 flex-1 items-baseline justify-between gap-4">
+                      <span className={`font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-base font-medium ${
+                        isMatched ? 'text-[#1e293b]' : 'text-red-600'
+                      }`}>
+                        {ing.name}
+                      </span>
+                      <span className="shrink-0 font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-[14px] font-normal text-[#64748b]">
+                        {ing.amount?.trim() || '—'}
+                      </span>
+                    </div>
+                  </li>
+                )
+              })}
             </ul>
           </section>
 
-          <section ref={instructionsRef} id="instructions" className="mt-10 flex flex-col gap-10 scroll-mt-28">
-            <h2 className="font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-[12px] font-bold uppercase tracking-[0.06em] text-[#0f172a]">
-              Instructions
-            </h2>
-            <div className="relative pl-2">
-              <div
-                className="absolute bottom-2 left-[7px] top-2 w-px bg-[#e2e8f0]"
-                aria-hidden
-              />
-              <ol className="relative flex flex-col gap-10">
-                {blocks.map((block, i) => (
-                  <li key={i} className="relative pl-6">
-                    <span
-                      className={`absolute left-0 top-1.5 flex size-3.5 items-center justify-center rounded-full border-2 ${
-                        i === 0
-                          ? 'border-white bg-[#0f172a] shadow-[0_0_0_1px_#e2e8f0]'
-                          : 'border-[#cbd5e1] bg-white'
-                      }`}
-                      aria-hidden
-                    />
-                    <div className="flex flex-col gap-2">
-                      <h3 className="font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-base font-bold leading-normal text-[#0f172a]">
-                        {block.title}
-                      </h3>
-                      <p className="whitespace-pre-wrap font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-base font-normal leading-[1.625] text-[#475569]">
-                        {block.body}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ol>
+          {shouldShowInstructions && blocks.length > 0 && (
+            <section ref={instructionsRef} id="instructions" className="mt-10 flex flex-col gap-10 scroll-mt-28">
+              <h2 className="font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-[12px] font-bold uppercase tracking-[0.06em] text-[#0f172a]">
+                Instructions
+              </h2>
+              <div className="relative pl-2">
+                <div
+                  className="absolute bottom-2 left-[7px] top-2 w-px bg-[#e2e8f0]"
+                  aria-hidden
+                />
+                <ol className="relative flex flex-col gap-10">
+                  {blocks.map((block, i) => {
+                    const stepNum = i + 1
+                    return (
+                      <li key={i} className="relative pl-6">
+                        <span
+                          className={`absolute left-0 top-1.5 flex size-3.5 items-center justify-center rounded-full border-2 ${
+                            i === 0
+                              ? 'border-white bg-[#0f172a] shadow-[0_0_0_1px_#e2e8f0]'
+                              : 'border-[#cbd5e1] bg-white'
+                          }`}
+                          aria-hidden
+                        />
+                        <button
+                          onClick={() => navigate(`/recipe/${recipe.id}/step/${stepNum}`)}
+                          className="w-full text-left flex flex-col gap-2 hover:bg-gray-50 rounded-lg p-2 -m-2 transition-colors"
+                        >
+                          <h3 className="font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-base font-bold leading-normal text-[#0f172a]">
+                            {block.title}
+                          </h3>
+                          <p className="whitespace-pre-wrap font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-base font-normal leading-[1.625] text-[#475569]">
+                            {block.body}
+                          </p>
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ol>
+              </div>
+            </section>
+          )}
+
+          {!shouldShowInstructions && !allIngredientsMatched && (
+            <div className="mt-10 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <h3 className="text-lg font-semibold text-yellow-800 mb-2">Missing ingredients</h3>
+              <p className="text-yellow-700 mb-4">
+                You don't have all the required ingredients for this recipe. Instructions are hidden to ensure a successful cooking experience.
+              </p>
+              <button
+                onClick={() => {
+                  console.log('Show instructions clicked, setting override to true')
+                  setUserOverrideShowInstructions(true)
+                }}
+                className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+              >
+                Show instructions anyway
+              </button>
             </div>
-          </section>
+          )}
 
         </div>
       </div>
@@ -276,14 +326,16 @@ export default function RecipeDetailScreen() {
 
       <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 border-t border-[#f1f5f9] bg-[#ffffffcf] px-6 pb-2 pt-4 backdrop-blur-md md:px-10">
         <div className="mx-auto max-w-lg md:max-w-3xl lg:max-w-4xl flex flex-col gap-2">
-          <button
-            type="button"
-            onClick={onStartCooking}
-            className="relative w-full overflow-hidden rounded-xl bg-[#10b981] py-4 text-center font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-base font-bold leading-normal text-white shadow-[0_4px_5.25px_-4px_rgba(16,185,129,0.2),0_10px_13.125px_-3px_rgba(16,185,129,0.2)] outline-none hover:opacity-[0.98] focus-visible:ring-2 focus-visible:ring-[#10b981]/40"
-          >
-            Scroll to Instructions
-          </button>
-          {recipe.instructions && recipe.instructions.length > 0 && (
+          {shouldShowInstructions && (
+            <button
+              type="button"
+              onClick={onStartCooking}
+              className="relative w-full overflow-hidden rounded-xl bg-[#10b981] py-4 text-center font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-base font-bold leading-normal text-white shadow-[0_4px_5.25px_-4px_rgba(16,185,129,0.2),0_10px_13.125px_-3px_rgba(16,185,129,0.2)] outline-none hover:opacity-[0.98] focus-visible:ring-2 focus-visible:ring-[#10b981]/40"
+            >
+              Scroll to Instructions
+            </button>
+          )}
+          {shouldShowInstructions && recipe.instructions && recipe.instructions.length > 0 && (
             <button
               type="button"
               onClick={() => navigate(`/recipe/${recipe.id}/step/1`)}
