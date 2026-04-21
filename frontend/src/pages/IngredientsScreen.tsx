@@ -113,6 +113,7 @@ export default function IngredientsScreen() {
     if (!t) return
     const exists = items.some((i) => i.toLowerCase() === t.toLowerCase())
     if (exists) return
+
     setItems((prev) => [...prev, t])
     setQuery('')
   }
@@ -121,7 +122,9 @@ export default function IngredientsScreen() {
     setItems((prev) => prev.filter((_, i) => i !== index))
   }
 
-  const clearAll = () => setItems([])
+  const clearAll = () => {
+    setItems([])
+  }
 
   const generateRecipes = async () => {
     if (items.length === 0) return
