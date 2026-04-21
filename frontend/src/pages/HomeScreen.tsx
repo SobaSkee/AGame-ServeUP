@@ -8,8 +8,17 @@ import { homeCategoryChips } from '../data/homeCategoryChips'
 import { suggestedRecipes } from '../data/suggestedRecipes'
 import { contentShellClass } from '../layout/contentShell'
 import { API_BASE } from '../config/api'
+import { useAuth } from '../context/AuthContext'
 import { usePantryScan } from '../context/PantryScanContext'
 import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
+
+function greetingFirstName(user: { name: string; email: string } | null): string | null {
+  if (!user) return null
+  const n = user.name?.trim()
+  if (n) return n.split(/\s+/)[0]
+  const local = user.email?.split('@')[0]?.trim()
+  return local || null
+}
 
 type RecentRecipe = { id: string; title: string }
 
@@ -22,6 +31,8 @@ type DetectedIngredient = {
 export default function HomeScreen() {
   const [recentRecipes, setRecentRecipes] = useState<RecentRecipe[]>([])
   const { recipes: contextRecipes } = useGeneratedRecipes()
+  const { user, loading: authLoading } = useAuth()
+  const greetName = !authLoading ? greetingFirstName(user) : null
 
   useEffect(() => {
     const data = localStorage.getItem('recentRecipes')
@@ -93,12 +104,25 @@ export default function HomeScreen() {
         <main className="flex flex-col gap-8 pb-10 md:gap-10 md:pb-16 lg:gap-12">
           <section className="flex flex-col gap-8 pt-[23px] pb-8 md:pt-8 md:pb-10 lg:max-w-3xl xl:max-w-full">
             <h1 className="text-[32px] font-semibold leading-[1.15] tracking-[-0.025em] text-text md:text-4xl md:leading-[1.12] lg:text-5xl lg:leading-[1.1]">
-              <span className="lg:hidden">
-                What are you
-                <br />
-                cooking today?
-              </span>
-              <span className="hidden lg:inline">What are you cooking today?</span>
+              {greetName ? (
+                <>
+                  <span className="lg:hidden">
+                    What are you
+                    <br />
+                    cooking today {greetName}?
+                  </span>
+                  <span className="hidden lg:inline">What are you cooking today {greetName}?</span>
+                </>
+              ) : (
+                <>
+                  <span className="lg:hidden">
+                    What are you
+                    <br />
+                    cooking today?
+                  </span>
+                  <span className="hidden lg:inline">What are you cooking today?</span>
+                </>
+              )}
             </h1>
             <SearchBar />
             <QuickActionCards

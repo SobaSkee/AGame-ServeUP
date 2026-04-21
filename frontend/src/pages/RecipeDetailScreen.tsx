@@ -135,9 +135,9 @@ export default function RecipeDetailScreen() {
         <div className="relative mx-auto flex h-14 max-w-lg items-center justify-between px-4 md:h-16 md:max-w-3xl md:px-6 lg:max-w-4xl">
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/generated-recipes')}
             className="-ml-2 flex size-10 items-center justify-center rounded-full text-[#111827] outline-none hover:bg-[#f9fafb] focus-visible:ring-2 focus-visible:ring-[#111827]/20"
-            aria-label="Back"
+            aria-label="Back to generated recipes"
           >
             <ArrowLeftIcon className="size-4" strokeWidth={1.75} />
           </button>

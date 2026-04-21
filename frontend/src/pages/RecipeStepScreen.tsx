@@ -16,7 +16,7 @@ export default function RecipeStepScreen() {
 
   if (!recipe || sortedSteps.length === 0 || !sortedSteps[stepIndex]) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-dvh gap-4 bg-white px-6 text-center font-[Inter,ui-sans-serif,system-ui,sans-serif]">
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-white px-6 pb-24 text-center font-[Inter,ui-sans-serif,system-ui,sans-serif] md:pb-28">
         <p className="text-base text-[#64748b]">
           {!recipe ? 'Recipe not found — it may have been cleared from your session.' : 'Step not found.'}
         </p>
@@ -36,7 +36,7 @@ export default function RecipeStepScreen() {
   const progressPct = Math.round(((stepIndex + 1) / totalSteps) * 100)
 
   return (
-    <div className="min-h-dvh flex flex-col bg-white font-[Inter,ui-sans-serif,system-ui,sans-serif]">
+    <div className="flex min-h-dvh flex-col bg-white pb-24 font-[Inter,ui-sans-serif,system-ui,sans-serif] md:pb-28">
       {/* Header */}
       <header className="sticky top-0 z-10 border-b border-[#f1f5f9] bg-white px-4 py-3 flex items-center gap-3">
         <button
@@ -77,7 +77,7 @@ export default function RecipeStepScreen() {
       </main>
 
       {/* Navigation footer */}
-      <footer className="border-t border-[#f1f5f9] bg-white px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-4">
+      <footer className="border-t border-[#f1f5f9] bg-white px-6 pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]">
         <div className="max-w-lg mx-auto flex gap-3">
           <button
             disabled={stepIndex === 0}
