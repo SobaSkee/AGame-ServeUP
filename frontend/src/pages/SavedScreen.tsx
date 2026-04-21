@@ -1,22 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid'
 import { BookmarkIcon } from '@heroicons/react/24/outline'
 import { useAuth } from '../context/AuthContext'
 import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
+import GeneratedRecipeCard from '../components/recipes/GeneratedRecipeCard'
 import type { GeneratedRecipe } from '../types/recipe'
-function metaLine(recipe: GeneratedRecipe): string {
-  const n = recipe.ingredients?.length ?? 0
-  const ing = `${n} ingredient${n === 1 ? '' : 's'}`
-  const time = recipe.prepTime?.trim()
-  if (time && time !== '—') return `${time} • ${ing}`
-  return ing
-}
-
-function cuisineLabel(recipe: GeneratedRecipe): string {
-  if (recipe.cuisine?.trim()) return recipe.cuisine.trim().toUpperCase()
-  return 'RECIPE'
-}
 
 export default function SavedScreen() {
   const navigate = useNavigate()
@@ -41,7 +29,7 @@ export default function SavedScreen() {
           mergeRecipes(data.recipes)
           initSavedIds(data.recipes.map((r: GeneratedRecipe) => r.id))
         } else {
-          setError(data.error ?? 'Could not load saved recipes')
+          setError(data.error ?? data.message ?? 'Could not load saved recipes')
         }
       })
       .catch(() => setError('Network error — is the backend running?'))
@@ -109,60 +97,15 @@ export default function SavedScreen() {
         )}
 
         {visibleRecipes.length > 0 && (
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-2 md:gap-x-8 md:gap-y-10 lg:grid-cols-2">
+          <div className="flex flex-col gap-10 md:grid md:grid-cols-2 md:gap-x-8 md:gap-y-10 lg:grid-cols-2">
             {visibleRecipes.map((recipe) => (
-              <article
+              <GeneratedRecipeCard
                 key={recipe.id}
-                className="flex cursor-pointer flex-col gap-4"
-                onClick={() => navigate(`/recipe/${encodeURIComponent(recipe.id)}`)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    navigate(`/recipe/${encodeURIComponent(recipe.id)}`)
-                  }
-                }}
-                role="link"
-                tabIndex={0}
-                aria-label={`View ${recipe.title}`}
-              >
-                {/* Image / placeholder */}
-                <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-[#f3f4f6]">
-                  {recipe.imageUrl ? (
-                    <img
-                      src={recipe.imageUrl}
-                      alt={recipe.title}
-                      className="h-full w-full object-cover"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <span className="text-3xl opacity-30" role="img" aria-label="Food">🍽️</span>
-                    </div>
-                  )}
-                  {/* Bookmark toggle */}
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); toggleSaved(recipe) }}
-                    className="absolute right-3 top-3 flex size-8 items-center justify-center rounded-full bg-white/90 text-[#18181b] shadow-sm backdrop-blur-sm transition-opacity hover:opacity-90"
-                    aria-label={savedIds.has(recipe.id) ? 'Unsave recipe' : 'Re-save recipe'}
-                  >
-                    {savedIds.has(recipe.id)
-                      ? <BookmarkSolidIcon className="size-4" />
-                      : <BookmarkIcon className="size-4" strokeWidth={2} />
-                    }
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#9ca3af]">
-                    {cuisineLabel(recipe)}
-                  </p>
-                  <h2 className="text-[17px] font-semibold leading-[1.35] text-[#111827]">
-                    {recipe.title}
-                  </h2>
-                  <p className="text-[13px] text-[#6b7280]">{metaLine(recipe)}</p>
-                </div>
-              </article>
+                recipe={recipe}
+                saved={savedIds.has(recipe.id)}
+                onOpen={() => navigate(`/recipe/${encodeURIComponent(recipe.id)}`)}
+                onToggleSaved={toggleSaved}
+              />
             ))}
           </div>
         )}

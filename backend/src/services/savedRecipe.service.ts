@@ -17,13 +17,14 @@ export async function saveRecipe(user_id: ObjectId, recipe: Recipe) : Promise<In
     const user = await collections.users.findOne({_id: user_id});
     if (user === null) throw new Error("Attempted to save recipe for a nonexistent user account");
 
-    const new_recipe = saveRecipeFromGeneratedRecipe(recipe);
-    const existing = await findRecipeBySourceAndUserId(new_recipe.source_id, user_id);
+    const base = saveRecipeFromGeneratedRecipe(recipe);
+    const existing = await findRecipeBySourceAndUserId(base.source_id, user_id);
     if (existing !== null) {
-        console.log(`Could not save recipe with id ${new_recipe.source_id} to user ${user_id}; user already has a recipe with that id saved.`);
+        console.log(`Could not save recipe with id ${base.source_id} to user ${user_id}; user already has a recipe with that id saved.`);
         return null;
     }
 
+    const new_recipe: SavedRecipe = { ...base, user_id };
     return await collections.saved_recipes.insertOne(new_recipe);
 }
 

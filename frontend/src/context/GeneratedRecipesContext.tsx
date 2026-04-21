@@ -40,14 +40,25 @@ export function GeneratedRecipesProvider({ children }: { children: ReactNode }) 
       else next.add(recipe.id)
       return next
     })
+    const revert = () => {
+      setSavedIds((prev) => {
+        const next = new Set(prev)
+        if (isSaved) next.add(recipe.id)
+        else next.delete(recipe.id)
+        return next
+      })
+    }
     try {
-      await fetch('/api/recipes', {
+      const res = await fetch('/api/recipes', {
         method: isSaved ? 'DELETE' : 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(recipe),
       })
-    } catch { /* not logged in or no DB */ }
+      if (!res.ok) revert()
+    } catch {
+      revert()
+    }
   }, [savedIds])
 
   const value = useMemo(
