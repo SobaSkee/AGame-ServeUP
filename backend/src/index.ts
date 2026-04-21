@@ -6,14 +6,14 @@ import * as path from 'path'
 import { fileURLToPath } from 'url'
 import { ObjectId } from 'mongodb'
 import 'dotenv/config'
-import { detectIngredientsFromImage } from './services/ingredientDetection.js'
-import { generateRecipesFromIngredients } from './services/recipeGeneration.js'
-import { collections, connectToDatabase } from "./services/database.service.js"
+import { detectIngredientsFromImage } from './services/ingredientDetection.ts'
+import { generateRecipesFromIngredients } from './services/recipeGeneration.ts'
+import { collections, connectToDatabase } from "./services/database.service.ts"
 import cookieParser from "cookie-parser";
-import authRoutes from "./routes/auth.router";
+import authRoutes from "./routes/auth.router.ts";
 import { savedRecipesRouter } from "./routes/savedrecipes.router.ts"
 import { pantriesRouter } from './routes/pantry.router.ts'
-import { validateTokenCookie } from './services/session.service.js'
+import { validateTokenCookie } from './services/session.service.ts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -21,10 +21,23 @@ const __dirname = path.dirname(__filename)
 const app = express()
 const PORT = Number(process.env.PORT) || 3001
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+  : []
+if (allowedOrigins.length === 0) {
+  allowedOrigins.push('http://localhost:5173')
+}
+
 // Middleware
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin(origin, callback) {
+      if (!origin) return callback(null, true)
+      if (allowedOrigins.includes(origin)) return callback(null, true)
+      callback(null, false)
+    },
     credentials: true,
   })
 )

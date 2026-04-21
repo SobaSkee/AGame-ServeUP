@@ -10,6 +10,15 @@ const router = express.Router();
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
+function authCookieOptions() {
+  const prod = process.env.NODE_ENV === "production";
+  return {
+    httpOnly: true as const,
+    sameSite: (prod ? "none" : "lax") as "none" | "lax",
+    secure: prod,
+  };
+}
+
 router.post("/register", async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -36,10 +45,7 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     const { user, token } = await loginUser(email, password);
 
-    res.cookie("token", token, {
-      httpOnly: true,
-      sameSite: "lax",
-    });
+    res.cookie("token", token, authCookieOptions());
 
     res.json({
       id: user._id,
@@ -81,7 +87,7 @@ router.get("/me", async (req, res) => {
 });
 
 router.post("/logout", (_req, res) => {
-  res.clearCookie("token");
+  res.clearCookie("token", { ...authCookieOptions(), maxAge: 0 });
   res.json({ message: "Logged out" });
 });
 

@@ -37,6 +37,8 @@ jobs:
         env:
           # Must match GitHub Pages path: /{repo}/
           VITE_BASE_PATH: /AGame-ServeUP/
+          # Set in repo Settings → Secrets: your Render web service URL, e.g. https://serveup-api.onrender.com
+          VITE_API_BASE: ${{ secrets.VITE_API_BASE }}
         run: |
           npm ci
           npm run build
