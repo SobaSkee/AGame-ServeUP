@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react'
 import type { GeneratedRecipe } from '../types/recipe'
+import { apiUrl } from '../config/api'
 
 type Ctx = {
   recipes: GeneratedRecipe[]
@@ -49,7 +50,7 @@ export function GeneratedRecipesProvider({ children }: { children: ReactNode }) 
       })
     }
     try {
-      const res = await fetch('/api/recipes', {
+      const res = await fetch(apiUrl('/api/recipes'), {
         method: isSaved ? 'DELETE' : 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },

@@ -11,7 +11,7 @@ import {
   RECENT_RECIPES_STORAGE_KEY,
   type RecentRecipeEntry,
 } from '../utils/recentRecipes'
-import { API_BASE } from '../config/api'
+import { apiUrl } from '../config/api'
 import { useAuth } from '../context/AuthContext'
 import { usePantryScan } from '../context/PantryScanContext'
 
@@ -56,7 +56,7 @@ export default function HomeScreen() {
     try {
       const formData = new FormData()
       formData.append('image', file)
-      const res = await fetch(`${API_BASE}/api/pantry/detect`, {
+      const res = await fetch(apiUrl('/api/pantry/detect'), {
         method: 'POST',
         credentials: 'include',
         body: formData,

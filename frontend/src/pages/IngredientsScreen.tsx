@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import { API_BASE } from '../config/api'
+import { apiUrl } from '../config/api'
 import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
 import { usePantryScan } from '../context/PantryScanContext'
 import { useAuth } from '../context/AuthContext'
@@ -27,7 +27,7 @@ export default function IngredientsScreen() {
     const addParam = searchParams.get('add')?.trim()
 
     if (user) {
-      fetch('/api/pantry/update', { credentials: 'include' })
+      fetch(apiUrl('/api/pantry/update'), { credentials: 'include' })
         .then((r) => r.json())
         .then((data) => {
           if (data.success && Array.isArray(data.ingredients)) {
@@ -74,7 +74,7 @@ export default function IngredientsScreen() {
       const toDelete = serverItems.current.filter((n) => !currentSet.has(n))
 
       const ops: Promise<unknown>[] = [
-        fetch('/api/pantry/update', {
+        fetch(apiUrl('/api/pantry/update'), {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
@@ -84,7 +84,7 @@ export default function IngredientsScreen() {
 
       if (toDelete.length > 0) {
         ops.push(
-          fetch('/api/pantry/update', {
+          fetch(apiUrl('/api/pantry/update'), {
             method: 'DELETE',
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
@@ -133,7 +133,7 @@ export default function IngredientsScreen() {
     try {
       const list = items.join(',')
       const res = await fetch(
-        `${API_BASE}/api/ingredients/suggest-recipes?ingredients=${encodeURIComponent(list)}`
+        `${apiUrl('/api/ingredients/suggest-recipes')}?ingredients=${encodeURIComponent(list)}`
       )
       const data = await res.json()
       if (data.success && Array.isArray(data.recipes)) {

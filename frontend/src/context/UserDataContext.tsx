@@ -1,4 +1,4 @@
-
+import { apiUrl } from '../config/api'
 
 interface RecipeIngredient {
   name: string
@@ -10,7 +10,7 @@ export async function getUserPantry(user: any): Promise<string[] | null> {
     if (user === null) return null; // This is fine as user is not logged in
     // TODO: Make an oops message if this fails rather than just returning an empty string
     try {
-        const res = await fetch('http://localhost:3001/api/pantry/update', {
+        const res = await fetch(apiUrl('/api/pantry/update'), {
             method: 'GET',
             headers: {
                 'Content-Type': 'application/json',
@@ -42,7 +42,7 @@ export async function addIngredientsToUserPantry(user: any, ingredients: string[
     // TODO: Make an oops message if this fails rather than just returning an empty string
     const ingredients_formatted: RecipeIngredient[] = ingredients.map((ingredient) => {return {name: ingredient}})
     try {
-      const res = await fetch('http://localhost:3001/api/pantry/update', {
+      const res = await fetch(apiUrl('/api/pantry/update'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -68,7 +68,7 @@ export async function addIngredientToUserPantry(user: any, ingredient: string): 
     // TODO: Make an oops message if this fails rather than just returning an empty string
     const recipe_ingredients: RecipeIngredient[] = [{name: ingredient}];
     try {
-      const res = await fetch('http://localhost:3001/api/pantry/update', {
+      const res = await fetch(apiUrl('/api/pantry/update'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ export async function removeIngredientsFromUserPantry(user: any, ingredients: st
     // TODO: Make an oops message if this fails rather than just returning an empty string
     const ingredients_formatted: RecipeIngredient[] = ingredients.map((ingredient) => {return {name: ingredient}})
     try {
-      const res = await fetch('http://localhost:3001/api/pantry/update', {
+      const res = await fetch(apiUrl('/api/pantry/update'), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -117,7 +117,7 @@ export async function removeIngredientFromUserPantry(user: any, ingredient: stri
     // TODO: Make an oops message if this fails rather than just returning an empty string
     const recipe_ingredients: RecipeIngredient[] = [{name: ingredient}];
     try {
-      const res = await fetch('http://localhost:3001/api/pantry/update', {
+      const res = await fetch(apiUrl('/api/pantry/update'), {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
 import GeneratedRecipeCard from '../components/recipes/GeneratedRecipeCard'
 import type { GeneratedRecipe } from '../types/recipe'
+import { apiUrl } from '../config/api'
 
 export default function SavedScreen() {
   const navigate = useNavigate()
@@ -21,7 +22,7 @@ export default function SavedScreen() {
       setLoading(false)
       return
     }
-    fetch('/api/recipes', { credentials: 'include' })
+    fetch(apiUrl('/api/recipes'), { credentials: 'include' })
       .then((r) => r.json())
       .then((data) => {
         if (data.success && Array.isArray(data.recipes)) {

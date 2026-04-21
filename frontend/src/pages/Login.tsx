@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { contentShellClass } from '../layout/contentShell'
 import { useAuth } from '../context/AuthContext'
+import { apiUrl } from '../config/api'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -18,7 +19,7 @@ export default function Login() {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await fetch(apiUrl('/api/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
