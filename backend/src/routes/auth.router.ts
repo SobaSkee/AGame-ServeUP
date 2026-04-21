@@ -1,14 +1,10 @@
 import express from "express";
-import jwt from "jsonwebtoken";
 import { registerUser, loginUser } from "../services/auth.service";
 import { findUserId } from "../services/user.service";
 import { createNewPantry } from "../services/pantry.service";
-import { ObjectId } from "mongodb";
-import { validateSession, validateTokenCookie } from "../services/session.service";
+import { extractBearerOrCookieToken, revokeSessionToken, validateTokenCookie } from "../services/session.service";
 
 const router = express.Router();
-
-const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
 function authCookieOptions() {
   const prod = process.env.NODE_ENV === "production";
@@ -48,9 +44,12 @@ router.post("/login", async (req, res) => {
     res.cookie("token", token, authCookieOptions());
 
     res.json({
-      id: user._id,
-      name: user.name,
-      email: user.email,
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
     });
 
   } catch (err: any) {
@@ -60,17 +59,14 @@ router.post("/login", async (req, res) => {
 
 router.get("/me", async (req, res) => {
   try {
-    const token = req.cookies.token;
+    const token = extractBearerOrCookieToken(req);
+    const sessionInfo = await validateTokenCookie(token);
 
-    if (!token) { return res.status(401).json({ message: "Not logged in" }); }
+    if (!sessionInfo.valid || !sessionInfo.user) {
+      return res.status(401).json({ message: "Not logged in" });
+    }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
-    const decoded_user_id = new ObjectId(decoded.id);
-    const valid_session = await validateSession(token, decoded_user_id);
-
-    if (!valid_session) return res.status(401).json({ message: "Invalid session" });
-
-    const user = await findUserId(decoded_user_id);
+    const user = await findUserId(sessionInfo.user);
     if (!user) { return res.status(404).json({ message: "User not found" }); }
 
     return res.json({
@@ -86,7 +82,9 @@ router.get("/me", async (req, res) => {
   }
 });
 
-router.post("/logout", (_req, res) => {
+router.post("/logout", async (req, res) => {
+  const token = extractBearerOrCookieToken(req);
+  await revokeSessionToken(token);
   res.clearCookie("token", { ...authCookieOptions(), maxAge: 0 });
   res.json({ message: "Logged out" });
 });

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { extractBearerOrCookieToken } from "../services/session.service";
 
 const JWT_SECRET = process.env.JWT_SECRET || "secret";
 
@@ -12,7 +13,7 @@ export const requireAuth = (
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.cookies.token;
+  const token = extractBearerOrCookieToken(req);
 
   if (!token) {
     return res.status(401).json({ message: "Not logged in" });

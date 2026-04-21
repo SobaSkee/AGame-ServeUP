@@ -1,4 +1,4 @@
-import { apiUrl } from '../config/api'
+import { apiUrl, authHeaders } from '../config/api'
 
 interface RecipeIngredient {
   name: string
@@ -12,10 +12,9 @@ export async function getUserPantry(user: any): Promise<string[] | null> {
     try {
         const res = await fetch(apiUrl('/api/pantry/update'), {
             method: 'GET',
-            headers: {
+            headers: authHeaders({
                 'Content-Type': 'application/json',
-            },
-            credentials: 'include',
+            }),
         })
 
         if (!res.ok) { 
@@ -44,10 +43,9 @@ export async function addIngredientsToUserPantry(user: any, ingredients: string[
     try {
       const res = await fetch(apiUrl('/api/pantry/update'), {
         method: 'POST',
-        headers: {
+        headers: authHeaders({
           'Content-Type': 'application/json',
-        },
-        credentials: 'include',
+        }),
         body: JSON.stringify(ingredients_formatted)
       })
 
@@ -70,10 +68,9 @@ export async function addIngredientToUserPantry(user: any, ingredient: string): 
     try {
       const res = await fetch(apiUrl('/api/pantry/update'), {
         method: 'POST',
-        headers: {
+        headers: authHeaders({
           'Content-Type': 'application/json',
-        },
-        credentials: 'include',
+        }),
         body: JSON.stringify(recipe_ingredients)
       })
 
@@ -93,10 +90,9 @@ export async function removeIngredientsFromUserPantry(user: any, ingredients: st
     try {
       const res = await fetch(apiUrl('/api/pantry/update'), {
         method: 'DELETE',
-        headers: {
+        headers: authHeaders({
           'Content-Type': 'application/json',
-        },
-        credentials: 'include',
+        }),
         body: JSON.stringify(ingredients_formatted)
       })
 
@@ -119,10 +115,9 @@ export async function removeIngredientFromUserPantry(user: any, ingredient: stri
     try {
       const res = await fetch(apiUrl('/api/pantry/update'), {
         method: 'DELETE',
-        headers: {
+        headers: authHeaders({
           'Content-Type': 'application/json',
-        },
-        credentials: 'include',
+        }),
         body: JSON.stringify(recipe_ingredients)
       })
 

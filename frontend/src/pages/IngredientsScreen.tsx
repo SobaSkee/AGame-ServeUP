@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
-import { apiUrl } from '../config/api'
+import { apiUrl, authHeaders } from '../config/api'
 import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
 import { usePantryScan } from '../context/PantryScanContext'
 import { useAuth } from '../context/AuthContext'
@@ -27,7 +27,7 @@ export default function IngredientsScreen() {
     const addParam = searchParams.get('add')?.trim()
 
     if (user) {
-      fetch(apiUrl('/api/pantry/update'), { credentials: 'include' })
+      fetch(apiUrl('/api/pantry/update'), { headers: authHeaders() })
         .then((r) => r.json())
         .then((data) => {
           if (data.success && Array.isArray(data.ingredients)) {
@@ -76,8 +76,7 @@ export default function IngredientsScreen() {
       const ops: Promise<unknown>[] = [
         fetch(apiUrl('/api/pantry/update'), {
           method: 'POST',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(items.map((name) => ({ name }))),
         }).catch(() => {}),
       ]
@@ -86,8 +85,7 @@ export default function IngredientsScreen() {
         ops.push(
           fetch(apiUrl('/api/pantry/update'), {
             method: 'DELETE',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders({ 'Content-Type': 'application/json' }),
             body: JSON.stringify(toDelete.map((name) => ({ name }))),
           }).catch(() => {})
         )

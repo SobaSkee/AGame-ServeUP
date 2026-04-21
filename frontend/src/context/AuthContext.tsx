@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { apiUrl } from "../config/api";
+import { apiUrl, authHeaders, clearAuthToken } from "../config/api";
 
 type User = {
   id: string;
@@ -28,16 +28,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const fetchUser = async () => {
     try {
       const res = await fetch(apiUrl("/api/auth/me"), {
-        credentials: "include",
+        headers: authHeaders(),
       });
 
       if (!res.ok) {
+        clearAuthToken();
         setUser(null);
       } else {
         const data = await res.json();
         setUser(data.user);
       }
     } catch {
+      clearAuthToken();
       setUser(null);
     } finally {
       setLoading(false);
@@ -47,8 +49,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     await fetch(apiUrl("/api/auth/logout"), {
       method: "POST",
-      credentials: "include",
+      headers: authHeaders(),
     });
+    clearAuthToken();
     setUser(null);
   };
 

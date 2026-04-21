@@ -13,7 +13,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.router.ts";
 import { savedRecipesRouter } from "./routes/savedrecipes.router.ts"
 import { pantriesRouter } from './routes/pantry.router.ts'
-import { validateTokenCookie } from './services/session.service.ts'
+import { extractBearerOrCookieToken, validateTokenCookie } from './services/session.service.ts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -104,9 +104,9 @@ app.post('/api/pantry/detect', upload.single('image'), async (req: Request, res:
       .map((i) => i.name.trim())
       .filter((n) => n.length > 0)
 
-    // Resolve user from session cookie (preferred) or legacy userId form field
+    // Resolve user from session token (Bearer/cookie) or legacy userId form field
     let userIdRaw = ''
-    const token = req.cookies?.token
+    const token = extractBearerOrCookieToken(req)
     if (token) {
       const session = await validateTokenCookie(token)
       if (session.valid && session.user) {

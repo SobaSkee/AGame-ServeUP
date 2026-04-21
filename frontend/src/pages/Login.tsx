@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { contentShellClass } from '../layout/contentShell'
 import { useAuth } from '../context/AuthContext'
-import { apiUrl } from '../config/api'
+import { apiUrl, setAuthToken } from '../config/api'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -24,7 +24,6 @@ export default function Login() {
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include',
         body: JSON.stringify({ email, password }),
       })
 
@@ -33,6 +32,10 @@ export default function Login() {
       if (!res.ok) {
         setError(data.message || 'Login failed')
         return
+      }
+
+      if (typeof data?.token === 'string' && data.token.trim()) {
+        setAuthToken(data.token)
       }
 
       await refreshUser()

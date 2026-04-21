@@ -3,6 +3,7 @@ import { InsertOneResult, WithId, ObjectId } from "mongodb"
 import Session from "../models/session.ts"
 import crypto from "crypto"
 import jwt from "jsonwebtoken";
+import type { Request } from "express";
 
 const ONE_WEEK_MS = 604800000;
 
@@ -42,6 +43,12 @@ export async function createNewSession(token: string, user_id: ObjectId) : Promi
     return await collections.sessions.insertOne(new_session);
 }
 
+export async function revokeSessionToken(token: string): Promise<void> {
+    if (!token || !collections.sessions) return;
+    const token_hash = hashRawToken(token);
+    await collections.sessions.deleteOne({ token: token_hash });
+}
+
 export async function validateTokenCookie(token: string) : Promise<{valid: boolean, user: ObjectId | null}> {
     if (!token) return {valid: false, user: null};
     try {
@@ -51,4 +58,12 @@ export async function validateTokenCookie(token: string) : Promise<{valid: boole
     } catch {
         return {valid: false, user: null};
     }
+}
+
+export function extractBearerOrCookieToken(req: Request): string {
+    const authHeader = req.headers.authorization;
+    if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+        return authHeader.slice("Bearer ".length).trim();
+    }
+    return req.cookies?.token ?? "";
 }

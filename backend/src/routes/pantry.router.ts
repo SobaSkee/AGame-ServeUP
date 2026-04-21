@@ -2,7 +2,7 @@ import express, { Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import { collections } from "../services/database.service";
 import ScanRecipe from "../models/scan_recipe";
-import { validateTokenCookie } from "../services/session.service";
+import { extractBearerOrCookieToken, validateTokenCookie } from "../services/session.service";
 import { RecipeGenerationResult, Recipe, RecipeIngredient } from '../services/recipeGeneration';
 import { findUserId } from "../services/user.service";
 import { getUserPantry, createNewPantry, insertOrUpdatePantryItems, deletePantryItems } from "../services/pantry.service";
@@ -12,7 +12,7 @@ pantriesRouter.use(express.json());
 
 pantriesRouter.get("/", async (req: Request, res: Response) => {
 	try {
-		const token = req.cookies.token;
+		const token = extractBearerOrCookieToken(req);
 		if (!token) { return res.status(401).json({ message: "Not logged in" }); }
 		const session_info = await validateTokenCookie(token);
 		if (!session_info.valid) return res.status(401).json({ message: "Invalid session" });
@@ -50,7 +50,7 @@ pantriesRouter.get("/", async (req: Request, res: Response) => {
 
 pantriesRouter.post("/", async (req: Request, res: Response) => {
 	try {
-		const token = req.cookies.token;
+		const token = extractBearerOrCookieToken(req);
 		if (!token) { return res.status(401).json({ message: "Not logged in" }); }
 		const session_info = await validateTokenCookie(token);
 		if (!session_info.valid) return res.status(401).json({ message: "Invalid session" });
@@ -90,7 +90,7 @@ pantriesRouter.post("/", async (req: Request, res: Response) => {
 
 pantriesRouter.delete("/", async (req: Request, res: Response) => {
 	try {
-		const token = req.cookies.token;
+		const token = extractBearerOrCookieToken(req);
 		if (!token) { return res.status(401).json({ message: "Not logged in" }); }
 		const session_info = await validateTokenCookie(token);
 		if (!session_info.valid) return res.status(401).json({ message: "Invalid session" });
