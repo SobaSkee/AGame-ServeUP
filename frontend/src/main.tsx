@@ -7,9 +7,12 @@ import { GeneratedRecipesProvider } from './context/GeneratedRecipesContext'
 import { PantryScanProvider } from './context/PantryScanContext'
 import { AuthProvider } from "./context/AuthContext";
 
+const routerBasename =
+  import.meta.env.BASE_URL.replace(/\/$/, '') || undefined
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename}>
       <AuthProvider>
         <PantryScanProvider>
           <GeneratedRecipesProvider>
