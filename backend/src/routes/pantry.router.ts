@@ -34,6 +34,8 @@ pantriesRouter.get("/", async (req: Request, res: Response) => {
             {name: ingredient.name}
         )
 
+		console.log(`Retrieved pantry for user ${session_info.user}`);
+
 		return res.status(200).json({
 			success: true,
 			ingredients: ingredients,
@@ -73,6 +75,8 @@ pantriesRouter.post("/", async (req: Request, res: Response) => {
             {name: ingredient.name, amount: ingredient.amount} :
             {name: ingredient.name}
         )
+
+		console.log(`Added item to pantry of user ${session_info.user}`);
 
 		return res.status(200).json({
             success: true,
@@ -115,6 +119,8 @@ pantriesRouter.delete("/", async (req: Request, res: Response) => {
             {name: ingredient.name, amount: ingredient.amount} :
             {name: ingredient.name}
         )
+
+		console.log(`Deleted items from the pantry of user ${session_info.user}`);
 
 		return res.status(200).json({
             success: true,

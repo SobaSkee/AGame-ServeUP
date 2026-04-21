@@ -4,6 +4,8 @@ import { ArrowLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/
 import { API_BASE } from '../config/api'
 import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
 import { usePantryScan } from '../context/PantryScanContext'
+import { getUserPantry, addIngredientsToUserPantry, addIngredientToUserPantry, removeIngredientsFromUserPantry, removeIngredientFromUserPantry } from '../context/UserDataContext'
+import { useAuth } from '../context/AuthContext'
 
 const POPULAR = ['Eggs', 'Cheese', 'Milk', 'Onions'] as const
 
@@ -15,13 +17,32 @@ export default function IngredientsScreen() {
   const { consumePendingPantry } = usePantryScan()
   const [query, setQuery] = useState('')
   const [items, setItems] = useState<string[]>(() => [...INITIAL_PANTRY])
+  const { user, loading, logout } = useAuth();
 
   useEffect(() => {
-    const fromScan = consumePendingPantry()
-    if (fromScan?.length) {
-      setItems(fromScan)
+    const fetchPantry = async() => {
+      const fromScan = consumePendingPantry()
+      // // console.log("Getting user pantry")
+      const fromUserPantry = await getUserPantry(user)
+
+      // console.log(fromUserPantry)
+
+      if (fromUserPantry === null) {
+        if (fromScan?.length) setItems(fromScan);
+        return;
+      }
+      if (!fromScan?.length) setItems(fromUserPantry);
+      else {
+        // console.log("Adding many to user pantry")
+        const updatedPantry = await addIngredientsToUserPantry(user, fromScan); // Note: this will include the added items
+        setItems(updatedPantry);
+      }
     }
-  }, [consumePendingPantry])
+    fetchPantry();
+
+    // console.log(items)
+
+  }, [consumePendingPantry, useAuth])
   const [loadingRecipes, setLoadingRecipes] = useState(false)
   const [recipeError, setRecipeError] = useState<string | null>(null)
 
@@ -36,15 +57,36 @@ export default function IngredientsScreen() {
     if (!t) return
     const exists = items.some((i) => i.toLowerCase() === t.toLowerCase())
     if (exists) return
+
     setItems((prev) => [...prev, t])
     setQuery('')
+
+    const updateUserPantry = async() => {
+      // console.log("Adding to user pantry")
+      await addIngredientToUserPantry(user, t);
+    }
+    updateUserPantry()
   }
 
   const removeAt = (index: number) => {
+    const to_remove = items[index];
     setItems((prev) => prev.filter((_, i) => i !== index))
+
+    const updateUserPantry = async() => {
+      // console.log("Removing from user pantry")
+      await removeIngredientFromUserPantry(user, to_remove);
+    }
+    updateUserPantry();
   }
 
-  const clearAll = () => setItems([])
+  const clearAll = () => {
+    const updateUserPantry = async() => {
+      // console.log("Removing all from user pantry")
+      await removeIngredientsFromUserPantry(user, items)
+    }
+    updateUserPantry()
+    setItems([])
+  }
 
   const generateRecipes = async () => {
     if (items.length === 0) return
