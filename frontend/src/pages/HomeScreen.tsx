@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-type RecentRecipe = { id: string; title: string }
 import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import QuickActionCards from '../components/home/QuickActionCards'
@@ -8,8 +7,11 @@ import SuggestedRecipes from '../components/home/SuggestedRecipes'
 import { homeCategoryChips } from '../data/homeCategoryChips'
 import { suggestedRecipes } from '../data/suggestedRecipes'
 import { contentShellClass } from '../layout/contentShell'
-import { API_BASE, PANTRY_USER_ID } from '../config/api'
+import { API_BASE } from '../config/api'
 import { usePantryScan } from '../context/PantryScanContext'
+import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
+
+type RecentRecipe = { id: string; title: string }
 
 type DetectedIngredient = {
   name: string
@@ -19,6 +21,7 @@ type DetectedIngredient = {
 
 export default function HomeScreen() {
   const [recentRecipes, setRecentRecipes] = useState<RecentRecipe[]>([])
+  const { recipes: contextRecipes } = useGeneratedRecipes()
 
   useEffect(() => {
     const data = localStorage.getItem('recentRecipes')
@@ -39,11 +42,9 @@ export default function HomeScreen() {
     try {
       const formData = new FormData()
       formData.append('image', file)
-      if (PANTRY_USER_ID) {
-        formData.append('userId', PANTRY_USER_ID)
-      }
       const res = await fetch(`${API_BASE}/api/pantry/detect`, {
         method: 'POST',
+        credentials: 'include',
         body: formData,
       })
 
@@ -131,19 +132,22 @@ export default function HomeScreen() {
 
           <section className="mt-6">
             <h2 className="text-lg font-semibold mb-2">Recently Viewed Recipes</h2>
-            {recentRecipes.length === 0 ? (
-              <p className="text-sm text-gray-500">You haven't viewed any recipes yet.</p>
-            ) : (
-              <ul className="space-y-1">
-                {recentRecipes.slice(0, 3).map((r) => (
-                  <li key={r.id}>
-                    <a href={`/recipe/${r.id}`} className="text-primary underline">
-                      {r.title}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
+            {(() => {
+              const contextIds = new Set(contextRecipes.map((r) => r.id))
+              const available = recentRecipes.filter((r) => contextIds.has(r.id))
+              if (available.length === 0) return null
+              return (
+                <ul className="space-y-1">
+                  {available.slice(0, 3).map((r) => (
+                    <li key={r.id}>
+                      <Link to={`/recipe/${r.id}`} className="text-primary underline">
+                        {r.title}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )
+            })()}
           </section>
         </main>
       </div>

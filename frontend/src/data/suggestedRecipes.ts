@@ -1,6 +1,5 @@
 import type { SuggestedRecipe } from '../types/recipe'
 
-/** Demo thumbnails (Unsplash). Swap for your user uploaded images later. */
 export const suggestedRecipes: SuggestedRecipe[] = [
   {
     id: '1',

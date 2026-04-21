@@ -1,27 +1,104 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@heroicons/react/24/outline'
 import { API_BASE } from '../config/api'
 import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
 import { usePantryScan } from '../context/PantryScanContext'
+import { useAuth } from '../context/AuthContext'
 
-const POPULAR = ['Eggs', 'Cheese', 'Milk', 'Onions'] as const
+const POPULAR = ['Eggs', 'Cheese', 'Milk', 'Onions', 'Garlic', 'Tomatoes', 'Chicken', 'Pasta', 'Rice', 'Butter', 'Spinach', 'Potatoes'] as const
 
 const INITIAL_PANTRY = [] as const
 
 export default function IngredientsScreen() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const { user } = useAuth()
   const { setRecipes: setGeneratedRecipes } = useGeneratedRecipes()
   const { consumePendingPantry } = usePantryScan()
   const [query, setQuery] = useState('')
   const [items, setItems] = useState<string[]>(() => [...INITIAL_PANTRY])
+  const initialised = useRef(false)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const serverItems = useRef<string[]>([])
 
   useEffect(() => {
     const fromScan = consumePendingPantry()
-    if (fromScan?.length) {
-      setItems(fromScan)
+    const addParam = searchParams.get('add')?.trim()
+
+    if (user) {
+      fetch('/api/pantry/update', { credentials: 'include' })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.ingredients)) {
+            const names: string[] = data.ingredients.map((i: { name: string }) => i.name).filter(Boolean)
+            serverItems.current = names
+            const base = fromScan?.length ? fromScan : names
+            const extra: string[] = []
+            if (addParam && !base.some((n) => n.toLowerCase() === addParam.toLowerCase())) {
+              extra.push(addParam)
+            }
+            setItems([...extra, ...base])
+          } else {
+            const base = fromScan?.length ? fromScan : []
+            if (addParam) {
+              const lower = addParam.toLowerCase()
+              if (!base.some((n) => n.toLowerCase() === lower)) base.unshift(addParam)
+            }
+            setItems(base)
+          }
+        })
+        .catch(() => {
+          const base = fromScan?.length ? fromScan : []
+          if (addParam && !base.some((n) => n.toLowerCase() === addParam.toLowerCase())) {
+            base.unshift(addParam)
+          }
+          setItems(base)
+        })
+        .finally(() => { initialised.current = true })
+    } else {
+      const base = fromScan?.length ? fromScan : []
+      if (addParam && !base.some((n) => n.toLowerCase() === addParam.toLowerCase())) {
+        base.unshift(addParam)
+      }
+      setItems(base)
+      initialised.current = true
     }
-  }, [consumePendingPantry])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!initialised.current || !user) return
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    saveTimer.current = setTimeout(async () => {
+      const currentSet = new Set(items)
+      const toDelete = serverItems.current.filter((n) => !currentSet.has(n))
+
+      const ops: Promise<unknown>[] = [
+        fetch('/api/pantry/update', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(items.map((name) => ({ name }))),
+        }).catch(() => {}),
+      ]
+
+      if (toDelete.length > 0) {
+        ops.push(
+          fetch('/api/pantry/update', {
+            method: 'DELETE',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(toDelete.map((name) => ({ name }))),
+          }).catch(() => {})
+        )
+      }
+
+      await Promise.all(ops)
+      serverItems.current = [...items]
+    }, 800)
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
+  }, [items, user])
+
   const [loadingRecipes, setLoadingRecipes] = useState(false)
   const [recipeError, setRecipeError] = useState<string | null>(null)
 

@@ -27,7 +27,6 @@ export async function validateSession(token: string, user_id: ObjectId) : Promis
 
     if (session === null) return false;
 
-    // console.log("Session user: %s, decoded user: %s", session.user_id.toString(), user_id.toString());
     return session.user_id.equals(user_id);
 }
 
@@ -43,9 +42,13 @@ export async function createNewSession(token: string, user_id: ObjectId) : Promi
     return await collections.sessions.insertOne(new_session);
 }
 
-export async function validateTokenCookie(token: any) : Promise<{valid: boolean, user: ObjectId | null}> {
+export async function validateTokenCookie(token: string) : Promise<{valid: boolean, user: ObjectId | null}> {
     if (!token) return {valid: false, user: null};
-    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
-    const decoded_user_id = new ObjectId(decoded.id);
-    return {valid: await validateSession(token, decoded_user_id), user: decoded_user_id};
+    try {
+        const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+        const decoded_user_id = new ObjectId(decoded.id);
+        return {valid: await validateSession(token, decoded_user_id), user: decoded_user_id};
+    } catch {
+        return {valid: false, user: null};
+    }
 }

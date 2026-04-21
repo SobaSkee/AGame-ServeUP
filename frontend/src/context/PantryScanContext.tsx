@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useRef, type ReactNode } from 'react'
 
 type Ctx = {
-  /** Queue names from a home-screen pantry scan; consumed in Ingredients `useEffect` (StrictMode–safe). */
   queuePantryFromScan: (names: string[]) => void
   consumePendingPantry: () => string[] | null
 }

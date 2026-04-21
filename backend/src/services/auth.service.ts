@@ -13,7 +13,6 @@ export const registerUser = async (name: string, email: string, password: string
   if (!collections.users) throw new Error("Users services are not available");
   if (await userEmailExists(email)) throw new Error("User with that email already exists");
 
-  // console.log("Creating User in db");
   const hashed_pwd = await bcrypt.hash(password, 10);
   return createNewUser(name, email, hashed_pwd);
 };
@@ -26,7 +25,7 @@ export const loginUser = async (email: string, password: string) : Promise<{user
   if (!match) throw new Error("Invalid credentials");
 
   var token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, { expiresIn: "7d", });
-  const result = await createNewSession(token, user._id); // Will create new session if one with this signature does not already exist, or will update it if it does
+  const result = await createNewSession(token, user._id);
   if (!result.acknowledged) throw new Error("Failed to generate session token");
 
   await updateLastLogin(user._id);

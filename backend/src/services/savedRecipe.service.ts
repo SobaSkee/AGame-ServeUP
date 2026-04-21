@@ -18,7 +18,8 @@ export async function saveRecipe(user_id: ObjectId, recipe: Recipe) : Promise<In
     if (user === null) throw new Error("Attempted to save recipe for a nonexistent user account");
 
     const new_recipe = saveRecipeFromGeneratedRecipe(recipe);
-    if (findRecipeBySourceAndUserId(new_recipe.source_id, user_id) !== null) {
+    const existing = await findRecipeBySourceAndUserId(new_recipe.source_id, user_id);
+    if (existing !== null) {
         console.log(`Could not save recipe with id ${new_recipe.source_id} to user ${user_id}; user already has a recipe with that id saved.`);
         return null;
     }
@@ -121,7 +122,7 @@ export async function formatSavedRecipesForFrontendExport(saved_recipes: SavedRe
         const all_available = new Set(user_pantry.ingredients.map(ingredient => ingredient.name));
         converted_recipes.forEach((recipe, i) => {
             const all_required = new Set(recipe.ingredients.map(ingredient => ingredient.name));
-            converted_recipes[i].matchedIngredients = Array.from(all_required.intersection(all_available));
+            converted_recipes[i].matchedIngredients = Array.from(all_required).filter(name => all_available.has(name));
         });
         return converted_recipes;
     }

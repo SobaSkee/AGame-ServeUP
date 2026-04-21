@@ -88,5 +88,5 @@ export async function deletePantryItems(user_id: ObjectId, items: string[]) : Pr
 export function matchPantryIngredients(pantry: Pantry, ingredients: RecipeIngredient[]) : string[] {
     const all_required = new Set(ingredients.map(ingredient => ingredient.name));
     const all_available = new Set(pantry.ingredients.map(ingredient => ingredient.name));
-    return Array.from(all_required.intersection(all_available));
+    return Array.from(all_required).filter(name => all_available.has(name));
 }

@@ -1,19 +1,24 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import { contentShellClass } from '../layout/contentShell'
+import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const navigate = useNavigate()
+  const { refreshUser } = useAuth()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setLoading(true)
 
     try {
-      const res = await fetch('http://localhost:3001/api/auth/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -29,9 +34,12 @@ export default function Login() {
         return
       }
 
-      window.location.href = '/'
+      await refreshUser()
+      navigate('/')
     } catch {
       setError('Server error')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -89,9 +97,10 @@ export default function Login() {
 
               <button
                 type="submit"
-                className="mt-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                disabled={loading}
+                className="mt-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
               >
-                Log in
+                {loading ? 'Signing in…' : 'Log in'}
               </button>
             </form>
 

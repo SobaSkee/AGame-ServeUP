@@ -13,6 +13,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.router";
 import { savedRecipesRouter } from "./routes/savedrecipes.router.ts"
 import { pantriesRouter } from './routes/pantry.router.ts'
+import { validateTokenCookie } from './services/session.service.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -57,21 +58,10 @@ function publicApiBaseUrl(): string {
 app.use('/uploads', express.static(uploadDir))
 app.use("/api/auth", authRoutes)
 
-// Routes
-
-/**
- * Health check endpoint
- */
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' })
 })
-app.use('/uploads', express.static(uploadDir))
 
-/**
- * Upload and analyze pantry image
- * POST /api/pantry/detect
- * Multipart: field "image" (file). Optional field "userId" (24-char hex Mongo ObjectId) — when set and DB is connected, scan is saved to ingredientScans.
- */
 app.post('/api/pantry/detect', upload.single('image'), async (req: Request, res: Response) => {
   const imagePath = req.file?.path
   const deleteFile = (p: string) => {
@@ -101,8 +91,21 @@ app.post('/api/pantry/detect', upload.single('image'), async (req: Request, res:
       .map((i) => i.name.trim())
       .filter((n) => n.length > 0)
 
-    const userIdRaw = typeof req.body?.userId === 'string' ? req.body.userId.trim() : ''
-    const scans = collections.ingredient_scans;
+    // Resolve user from session cookie (preferred) or legacy userId form field
+    let userIdRaw = ''
+    const token = req.cookies?.token
+    if (token) {
+      const session = await validateTokenCookie(token)
+      if (session.valid && session.user) {
+        userIdRaw = session.user.toHexString()
+      }
+    }
+    if (!userIdRaw) {
+      const bodyId = typeof req.body?.userId === 'string' ? req.body.userId.trim() : ''
+      if (ObjectId.isValid(bodyId)) userIdRaw = bodyId
+    }
+
+    const scans = collections.ingredient_scans
     const shouldPersist = Boolean(scans && userIdRaw && ObjectId.isValid(userIdRaw))
 
     if (!shouldPersist) {
@@ -143,10 +146,6 @@ app.post('/api/pantry/detect', upload.single('image'), async (req: Request, res:
   }
 })
 
-/**
- * Get detected ingredients with recipes
- * GET /api/ingredients/suggest-recipes
- */
 app.get('/api/ingredients/suggest-recipes', async (req: Request, res: Response) => {
   try {
     const ingredients = req.query.ingredients as string | undefined
@@ -172,16 +171,12 @@ app.get('/api/ingredients/suggest-recipes', async (req: Request, res: Response) 
   }
 })
 
-/**
- * Start server
- */
 const HOST = '0.0.0.0'
 connectToDatabase().then(() => {
-	if (collections.saved_recipes) { app.use("/api/recipes", savedRecipesRouter); }
-  if (collections.pantries) { app.use("/api/pantry/update", pantriesRouter); }
+	if (collections.saved_recipes) app.use("/api/recipes", savedRecipesRouter);
+	if (collections.pantries) app.use("/api/pantry/update", pantriesRouter);
 	app.listen(PORT, HOST, () => {
-		console.log(`🍽️  ServeUP Backend on http://localhost:${PORT} (LAN: all interfaces)`);
-		console.log(`📝 API Docs: http://localhost:${PORT}/api/pantry/detect (POST with image)`,);
+		console.log(`ServeUP backend running on http://localhost:${PORT}`);
 	});
 });
 

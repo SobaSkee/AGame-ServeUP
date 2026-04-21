@@ -21,8 +21,11 @@ export const collections: {
 
 export async function connectToDatabase() {
 	dotenv.config();
+	if (!process.env.DB_CONN_STRING) {
+		console.log("No DB_CONN_STRING provided, running without database");
+		return;
+	}
 	if (!process.env.DB_NAME) throw new Error("DB_NAME is not defined in process environment");
-	if (!process.env.DB_CONN_STRING) throw new Error("DB_CONN_STRING is not defined in process environment");
 	if (!process.env.USERS_COLLECTION_NAME) throw new Error("USERS_COLLECTION_NAME is not defined in process environment");
 	if (!process.env.SESSIONS_COLLECTION_NAME) throw new Error("SESSIONS_COLLECTION_NAME is not defined in process environment");
 	if (!process.env.RECIPES_COLLECTION_NAME) throw new Error("RECIPES_COLLECTION_NAME is not defined in process environment");
@@ -54,10 +57,9 @@ export async function connectToDatabase() {
 	if (!collections.scan_recipes) console.log("Failed to get 'scan_recipes' collection");
 	if (!collections.pantries) console.log("Failed to get 'pantries' collection");
 
-	if (collections.users) await collections.users.createIndex({email: 1}, {unique: true}); // Indexes users by email for fast lookup
-	if (collections.sessions) await collections.sessions.createIndex({expiration: 1}, {expireAfterSeconds: 0}); // Ensures that expired sessions are deleted after expiration
-	if (collections.sessions) await collections.sessions.createIndex({token: 1}, {unique: true}); // Indexes sessions by token so they are fast to look up
-	if (collections.pantries) await collections.pantries.createIndex({user_id: 1}, {unique: true}); // Indexes pantries by user FK for fast lookup
-	if (collections.saved_recipes) await collections.saved_recipes.createIndex({source_id: 1}, {unique: true});
-	if (collections.saved_recipes) await collections.saved_recipes.createIndex({user_id: 1}, {unique: true});
+	if (collections.users) await collections.users.createIndex({ email: 1 }, { unique: true });
+	if (collections.sessions) await collections.sessions.createIndex({ expiration: 1 }, { expireAfterSeconds: 0 });
+	if (collections.sessions) await collections.sessions.createIndex({ token: 1 }, { unique: true });
+	if (collections.pantries) await collections.pantries.createIndex({ user_id: 1 }, { unique: true });
+	if (collections.saved_recipes) await collections.saved_recipes.createIndex({ user_id: 1, source_id: 1 }, { unique: true });
 }

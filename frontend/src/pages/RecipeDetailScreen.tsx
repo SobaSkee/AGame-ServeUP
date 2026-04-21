@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, useEffect } from 'react'
+import { useCallback, useMemo, useRef, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeftIcon, BookmarkIcon, ClockIcon } from '@heroicons/react/24/outline'
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid'
@@ -69,13 +69,11 @@ function instructionBlocks(recipe: GeneratedRecipe): { title: string; body: stri
 export default function RecipeDetailScreen() {
   const { recipeId } = useParams<{ recipeId: string }>()
   const navigate = useNavigate()
-  const { recipes } = useGeneratedRecipes()
-
+  const { recipes, savedIds, toggleSaved } = useGeneratedRecipes()
   const recipe = useMemo(
     () => recipes.find((r) => r.id === recipeId) ?? null,
     [recipes, recipeId]
   )
-
   useEffect(() => {
     if (!recipe) return
     const data = localStorage.getItem('recentRecipes')
@@ -85,19 +83,21 @@ export default function RecipeDetailScreen() {
         arr = JSON.parse(data)
       } catch {}
     }
-
     arr = arr.filter((r) => r.id !== recipe.id)
     arr.unshift({ id: recipe.id, title: recipe.title })
     if (arr.length > 10) arr = arr.slice(0, 10)
     localStorage.setItem('recentRecipes', JSON.stringify(arr))
   }, [recipe])
   const instructionsRef = useRef<HTMLElement>(null)
-  const [saved, setSaved] = useState(false)
 
   const allIngredientsMatched = (recipe?.matchedIngredients?.length ?? 0) === (recipe?.ingredients?.length ?? 0)
 
-  // Instructions are now shown by default
-  const shouldShowInstructions = true
+  const saved = recipe ? savedIds.has(recipe.id) : false
+
+  const toggleSave = useCallback(async () => {
+    if (!recipe) return
+    await toggleSaved(recipe)
+  }, [recipe, toggleSaved])
 
   const blocks = useMemo(() => (recipe ? instructionBlocks(recipe) : []), [recipe])
 
@@ -130,7 +130,33 @@ export default function RecipeDetailScreen() {
   return (
     <div className="min-h-dvh bg-white pb-36 font-[Inter,ui-sans-serif,system-ui,sans-serif] text-[#0f172a] antialiased">
 
-      <section className="relative h-[min(419px,52vh)] w-full overflow-hidden">
+      {/* Sticky header — outside overflow:hidden so sticky works correctly */}
+      <header className="sticky top-0 z-20 border-b border-[#f3f4f6] bg-white/90 backdrop-blur-md">
+        <div className="relative mx-auto flex h-14 max-w-lg items-center justify-between px-4 md:h-16 md:max-w-3xl md:px-6 lg:max-w-4xl">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="-ml-2 flex size-10 items-center justify-center rounded-full text-[#111827] outline-none hover:bg-[#f9fafb] focus-visible:ring-2 focus-visible:ring-[#111827]/20"
+            aria-label="Back"
+          >
+            <ArrowLeftIcon className="size-4" strokeWidth={1.75} />
+          </button>
+          <button
+            type="button"
+            onClick={toggleSave}
+            className="-mr-2 flex size-10 items-center justify-center rounded-full outline-none hover:bg-[#f9fafb] focus-visible:ring-2 focus-visible:ring-[#16a34a]/30"
+            aria-label={saved ? 'Remove from saved' : 'Save recipe'}
+          >
+            {saved ? (
+              <BookmarkSolidIcon className="size-5 shrink-0 text-[#16a34a]" aria-hidden />
+            ) : (
+              <BookmarkIcon className="size-5 shrink-0 text-[#a1a1aa]" aria-hidden />
+            )}
+          </button>
+        </div>
+      </header>
+
+      <section className="relative h-[min(360px,46vh)] w-full overflow-hidden">
         {recipe.imageUrl ? (
           <img
             src={recipe.imageUrl}
@@ -147,34 +173,9 @@ export default function RecipeDetailScreen() {
           />
         )}
         <div
-          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#000000]/60 via-[#000000]/0 to-[#000000]/20"
+          className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#000000]/20 via-[#000000]/0 to-[#000000]/20"
           aria-hidden
         />
-
-        <header className="relative z-10 border-b border-[#f3f4f6] bg-white">
-          <div className="relative mx-auto flex h-14 max-w-lg items-center justify-between px-4 md:h-16 md:max-w-3xl md:px-6 lg:max-w-4xl">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="-ml-2 flex size-10 items-center justify-center rounded-full text-[#111827] outline-none hover:bg-[#f9fafb] focus-visible:ring-2 focus-visible:ring-[#111827]/20"
-              aria-label="Back"
-            >
-              <ArrowLeftIcon className="size-4" strokeWidth={1.75} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setSaved((s) => !s)}
-              className="-mr-2 flex size-10 items-center justify-center rounded-full outline-none hover:bg-[#f9fafb] focus-visible:ring-2 focus-visible:ring-[#16a34a]/30"
-              aria-label={saved ? 'Remove from saved' : 'Save recipe'}
-            >
-              {saved ? (
-                <BookmarkSolidIcon className="size-5 shrink-0 text-[#16a34a]" aria-hidden />
-              ) : (
-                <BookmarkIcon className="size-5 shrink-0 text-[#a1a1aa]" aria-hidden />
-              )}
-            </button>
-          </div>
-        </header>
       </section>
 
       <div className="relative z-[1] -mt-12 rounded-t-[40px] bg-white shadow-[0_25px_50px_-12px_rgba(0,0,0,0.12)]">
@@ -254,7 +255,7 @@ export default function RecipeDetailScreen() {
             </ul>
           </section>
 
-          {shouldShowInstructions && blocks.length > 0 && (
+          {blocks.length > 0 && (
             <section ref={instructionsRef} id="instructions" className="mt-10 flex flex-col gap-10 scroll-mt-28">
               <h2 className="font-[family-name:'Plus_Jakarta_Sans',Inter,sans-serif] text-[12px] font-bold uppercase tracking-[0.06em] text-[#0f172a]">
                 Instructions
@@ -298,9 +299,9 @@ export default function RecipeDetailScreen() {
 
           {!allIngredientsMatched && (
             <div className="mt-10 p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <h3 className="text-lg font-semibold text-yellow-800 mb-2">Missing ingredients</h3>
+              <h3 className="text-lg font-semibold text-yellow-800 mb-2">Missing some ingredients</h3>
               <p className="text-yellow-700">
-                You don't have all the required ingredients for this recipe, but you can still view the instructions below.
+                You don't have all the required ingredients, but the full recipe and instructions are shown above.
               </p>
             </div>
           )}
@@ -311,7 +312,7 @@ export default function RecipeDetailScreen() {
 
       <div className="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 border-t border-[#f1f5f9] bg-[#ffffffcf] px-6 pb-2 pt-4 backdrop-blur-md md:px-10">
         <div className="mx-auto max-w-lg md:max-w-3xl lg:max-w-4xl flex flex-col gap-2">
-          {shouldShowInstructions && (
+          {blocks.length > 0 && (
             <button
               type="button"
               onClick={onStartCooking}
@@ -320,7 +321,7 @@ export default function RecipeDetailScreen() {
               Scroll to Instructions
             </button>
           )}
-          {shouldShowInstructions && recipe.instructions && recipe.instructions.length > 0 && (
+          {recipe.instructions && recipe.instructions.length > 0 && (
             <button
               type="button"
               onClick={() => navigate(`/recipe/${recipe.id}/step/1`)}

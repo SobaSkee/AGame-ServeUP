@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ArrowLeftIcon, BookmarkIcon } from '@heroicons/react/24/outline'
 import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid'
@@ -22,20 +22,9 @@ function metaLine(recipe: GeneratedRecipe): string {
 
 export default function GeneratedRecipesScreen() {
   const navigate = useNavigate()
-  const { recipes } = useGeneratedRecipes()
-  const [savedIds, setSavedIds] = useState<Set<string>>(() => new Set())
-
-  const toggleSave = (id: string) => {
-    setSavedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+  const { recipes, savedIds, toggleSaved } = useGeneratedRecipes()
 
   const hasRecipes = recipes.length > 0
-
   const sorted = useMemo(() => [...recipes], [recipes])
 
   return (
@@ -121,7 +110,7 @@ export default function GeneratedRecipesScreen() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation()
-                      toggleSave(recipe.id)
+                      toggleSaved(recipe)
                     }}
                     className="shrink-0 p-1 text-[#16a34a] outline-none hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[#16a34a]/30"
                     aria-label={savedIds.has(recipe.id) ? 'Remove from saved' : 'Save recipe'}

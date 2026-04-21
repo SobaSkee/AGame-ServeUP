@@ -8,15 +8,17 @@ export default function Register() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   const navigate = useNavigate()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setLoading(true)
 
     try {
-      const res = await fetch('http://localhost:3001/api/auth/register', {
+      const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -35,6 +37,8 @@ export default function Register() {
       navigate('/login')
     } catch {
       setError('Server error')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -106,9 +110,10 @@ export default function Register() {
 
               <button
                 type="submit"
-                className="mt-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90"
+                disabled={loading}
+                className="mt-2 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
               >
-                Create account
+                {loading ? 'Creating account…' : 'Create account'}
               </button>
             </form>
 

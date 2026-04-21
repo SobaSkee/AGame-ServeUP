@@ -1,11 +1,16 @@
 import { ClockIcon, FireIcon } from '@heroicons/react/24/outline'
+import { useNavigate } from 'react-router-dom'
 import type { SuggestedRecipe } from '../../types/recipe'
+import { useGeneratedRecipes } from '../../context/GeneratedRecipesContext'
 
 type Props = {
   recipes: SuggestedRecipe[]
 }
 
 export default function SuggestedRecipes({ recipes }: Props) {
+  const navigate = useNavigate()
+  const { recipes: generatedRecipes } = useGeneratedRecipes()
+
   return (
     <section className="flex flex-col gap-6 pt-10 md:gap-8 lg:pt-12">
       <div className="flex items-end justify-between gap-4 md:items-center">
@@ -14,6 +19,7 @@ export default function SuggestedRecipes({ recipes }: Props) {
         </h2>
         <button
           type="button"
+          onClick={() => navigate(generatedRecipes.length > 0 ? '/generated-recipes' : '/ingredients')}
           className="shrink-0 pb-0.5 text-sm font-medium leading-5 text-text/65 transition-colors hover:text-primary md:text-base"
         >
           View all

@@ -1,5 +1,11 @@
 {
-  "dependencies": {
-    "@heroicons/react": "^2.2.0"
-  }
+  "name": "agame-serveup",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev",
+    "build": "npm --prefix frontend run build && npm --prefix backend run build"
+  },
+  "workspaces": []
 }

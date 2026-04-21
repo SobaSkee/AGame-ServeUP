@@ -1,174 +1,113 @@
-import { useMemo } from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
-import { ArrowLeftIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline'
-import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
-import type { GeneratedRecipe } from '../types/recipe'
 
-function instructionBlocks(recipe: GeneratedRecipe): { title: string; body: string }[] {
-  const rows = [...(recipe.instructions ?? [])].sort((a, b) => a.step - b.step)
-  if (rows.length === 0) {
-    return [
-      {
-        title: 'No steps yet',
-        body:
-          recipe.description?.trim() ||
-          'This recipe was matched from your pantry. Detailed steps may appear when the full recipe is loaded.',
-      },
-    ]
-  }
-  return rows.map((row, i) => {
-    const text = String(row.instruction || '').trim()
-    const nl = text.indexOf('\n')
-    if (nl > 0 && nl < 48) {
-      const title = text.slice(0, nl).trim()
-      const body = text.slice(nl + 1).trim()
-      if (body.length > 0) return { title, body }
-    }
-    return {
-      title: `Step ${row.step || i + 1}`,
-      body: text || '—',
-    }
-  })
-}
+import { useParams, useNavigate } from 'react-router-dom'
+import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
+import { ArrowLeftIcon, ChevronRightIcon, ChevronLeftIcon } from '@heroicons/react/24/outline'
+import { CheckCircleIcon } from '@heroicons/react/24/solid'
 
 export default function RecipeStepScreen() {
   const { recipeId, stepNum } = useParams<{ recipeId: string; stepNum: string }>()
-  const navigate = useNavigate()
   const { recipes } = useGeneratedRecipes()
+  const navigate = useNavigate()
+  const recipe = recipes.find((r) => r.id === recipeId)
+  const sortedSteps = recipe?.instructions
+    ? [...recipe.instructions].sort((a, b) => a.step - b.step)
+    : []
+  const stepIndex = Number(stepNum) - 1
 
-  const recipe = useMemo(
-    () => recipes.find((r) => r.id === recipeId) ?? null,
-    [recipes, recipeId]
-  )
-
-  const stepNumber = useMemo(() => {
-    const num = parseInt(stepNum || '1', 10)
-    return isNaN(num) ? 1 : num
-  }, [stepNum])
-
-  const allSteps = useMemo(() => {
-    if (!recipe) return []
-    return instructionBlocks(recipe)
-  }, [recipe])
-
-  const currentStep = useMemo(() => {
-    const index = stepNumber - 1
-    return allSteps[index] || null
-  }, [allSteps, stepNumber])
-
-  const totalSteps = allSteps.length
-  const hasPrev = stepNumber > 1
-  const hasNext = stepNumber < totalSteps
-
-  if (!recipe) {
+  if (!recipe || sortedSteps.length === 0 || !sortedSteps[stepIndex]) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Recipe not found</h1>
-          <Link to="/" className="text-blue-600 hover:text-blue-800">
-            Go back home
-          </Link>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-dvh gap-4 bg-white px-6 text-center font-[Inter,ui-sans-serif,system-ui,sans-serif]">
+        <p className="text-base text-[#64748b]">
+          {!recipe ? 'Recipe not found — it may have been cleared from your session.' : 'Step not found.'}
+        </p>
+        <button
+          onClick={() => navigate(recipe ? `/recipe/${recipeId}` : '/generated-recipes')}
+          className="rounded-xl bg-[#10b981] px-5 py-3 text-sm font-bold text-white"
+        >
+          {recipe ? 'Back to recipe' : 'Browse recipes'}
+        </button>
       </div>
     )
   }
 
-  if (!currentStep) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Step not found</h1>
-          <Link to={`/recipe/${recipeId}`} className="text-blue-600 hover:text-blue-800">
-            View full recipe
-          </Link>
-        </div>
-      </div>
-    )
-  }
+  const step = sortedSteps[stepIndex]
+  const totalSteps = sortedSteps.length
+  const isLast = stepIndex === totalSteps - 1
+  const progressPct = Math.round(((stepIndex + 1) / totalSteps) * 100)
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-dvh flex flex-col bg-white font-[Inter,ui-sans-serif,system-ui,sans-serif]">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-2xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => navigate(`/recipe/${recipeId}`)}
-              className="flex items-center text-gray-600 hover:text-gray-900"
-            >
-              <ArrowLeftIcon className="w-5 h-5 mr-2" />
-              Recipe
-            </button>
-            <div className="text-sm text-gray-500">
-              Step {stepNumber} of {totalSteps}
-            </div>
-          </div>
-          <h1 className="text-xl font-semibold text-gray-900 mt-2">
+      <header className="sticky top-0 z-10 border-b border-[#f1f5f9] bg-white px-4 py-3 flex items-center gap-3">
+        <button
+          onClick={() => navigate(`/recipe/${recipeId}`)}
+          className="flex size-9 items-center justify-center rounded-full hover:bg-[#f9fafb] text-[#111827]"
+          aria-label="Back to recipe"
+        >
+          <ArrowLeftIcon className="size-4" strokeWidth={1.75} />
+        </button>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[#94a3b8]">
             {recipe.title}
-          </h1>
+          </p>
         </div>
-      </div>
+        <span className="text-xs font-semibold text-[#64748b]">
+          {stepIndex + 1} / {totalSteps}
+        </span>
+      </header>
 
       {/* Progress bar */}
-      <div className="max-w-2xl mx-auto px-4 py-4">
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${(stepNumber / totalSteps) * 100}%` }}
-          />
-        </div>
+      <div className="h-1 bg-[#f1f5f9]">
+        <div
+          className="h-1 bg-[#10b981] transition-all duration-300"
+          style={{ width: `${progressPct}%` }}
+        />
       </div>
 
       {/* Step content */}
-      <div className="max-w-2xl mx-auto px-4 pb-8">
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            {currentStep.title}
-          </h2>
-          <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-            {currentStep.body}
-          </p>
+      <main className="flex-1 flex flex-col justify-center px-6 py-10 max-w-lg mx-auto w-full">
+        <div className="mb-6">
+          <span className="inline-block rounded-full bg-[#ecfdf5] px-3 py-1 text-xs font-bold text-[#10b981] tracking-wider uppercase">
+            Step {step.step}
+          </span>
         </div>
+        <p className="text-[1.2rem] font-medium leading-[1.75] text-[#1e293b] whitespace-pre-line">
+          {step.instruction}
+        </p>
+      </main>
 
-        {/* Navigation */}
-        <div className="flex justify-between mt-6">
+      {/* Navigation footer */}
+      <footer className="border-t border-[#f1f5f9] bg-white px-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] pt-4">
+        <div className="max-w-lg mx-auto flex gap-3">
           <button
-            onClick={() => navigate(`/recipe/${recipeId}/step/${stepNumber - 1}`)}
-            disabled={!hasPrev}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium ${
-              hasPrev
-                ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
-            }`}
+            disabled={stepIndex === 0}
+            onClick={() => navigate(`/recipe/${recipeId}/step/${stepIndex}`)}
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-[#e2e8f0] text-[#64748b] disabled:opacity-30 hover:bg-[#f8fafc] transition-colors"
+            aria-label="Previous step"
           >
-            <ChevronLeftIcon className="w-5 h-5 mr-1" />
-            Previous
+            <ChevronLeftIcon className="size-5" strokeWidth={2} />
           </button>
 
-          <button
-            onClick={() => navigate(`/recipe/${recipeId}/step/${stepNumber + 1}`)}
-            disabled={!hasNext}
-            className={`flex items-center px-4 py-2 rounded-lg font-medium ${
-              hasNext
-                ? 'bg-blue-600 text-white hover:bg-blue-700'
-                : 'bg-gray-50 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            Next
-            <ChevronRightIcon className="w-5 h-5 ml-1" />
-          </button>
+          {isLast ? (
+            <button
+              onClick={() => navigate(`/recipe/${recipeId}`)}
+              className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-[#10b981] text-base font-bold text-white shadow-sm hover:opacity-95 transition-opacity"
+            >
+              <CheckCircleIcon className="size-5" />
+              Done!
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate(`/recipe/${recipeId}/step/${stepIndex + 2}`)}
+              className="flex h-14 flex-1 items-center justify-center gap-2 rounded-xl bg-[#0f172a] text-base font-bold text-white shadow-sm hover:opacity-90 transition-opacity"
+              aria-label="Next step"
+            >
+              Next step
+              <ChevronRightIcon className="size-5" strokeWidth={2.5} />
+            </button>
+          )}
         </div>
-
-        {/* Jump to full recipe */}
-        <div className="text-center mt-4">
-          <Link
-            to={`/recipe/${recipeId}`}
-            className="text-blue-600 hover:text-blue-800 text-sm"
-          >
-            View full recipe
-          </Link>
-        </div>
-      </div>
+      </footer>
     </div>
   )
 }

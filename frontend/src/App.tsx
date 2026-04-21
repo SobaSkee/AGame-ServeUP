@@ -5,7 +5,7 @@ import HomeScreen from './pages/HomeScreen'
 import IngredientsScreen from './pages/IngredientsScreen'
 import GeneratedRecipesScreen from './pages/GeneratedRecipesScreen'
 import RecipeDetailScreen from './pages/RecipeDetailScreen'
-import PlaceholderScreen from './pages/PlaceholderScreen'
+import SavedScreen from './pages/SavedScreen'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Profile from './pages/Profile.tsx'
@@ -20,10 +20,7 @@ export default function App() {
         <Route path="/generated-recipes" element={<GeneratedRecipesScreen />} />
   <Route path="/recipe/:recipeId" element={<RecipeDetailScreen />} />
   <Route path="/recipe/:recipeId/step/:stepNum" element={<RecipeStepScreen />} />
-        <Route
-          path="/saved"
-          element={<PlaceholderScreen title="Saved" description="Saved recipes will appear here." />}
-        />
+        <Route path="/saved" element={<SavedScreen />} />
 
         <Route path="/profile" element={<Profile />} />
         <Route path="/login" element={<Login />} />
