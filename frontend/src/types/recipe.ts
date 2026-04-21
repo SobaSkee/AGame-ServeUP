@@ -1,5 +1,3 @@
-export type MatchBadgeVariant = 'high' | 'medium'
-
 /** API shape from `/api/ingredients/suggest-recipes` */
 export type GeneratedRecipe = {
   id: string
@@ -15,15 +13,4 @@ export type GeneratedRecipe = {
   cuisine?: string
   /** Spoonacular recipe image */
   imageUrl?: string
-}
-
-export type SuggestedRecipe = {
-  id: string
-  title: string
-  imageUrl?: string
-  matchPercent: number
-  matchVariant: MatchBadgeVariant
-  ingredients: string
-  time: string
-  calories: string
 }

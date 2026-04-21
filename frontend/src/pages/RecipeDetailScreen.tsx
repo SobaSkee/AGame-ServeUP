@@ -5,6 +5,11 @@ import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid'
 import { SparklesIcon, UsersIcon } from '@heroicons/react/24/outline'
 import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
 import type { GeneratedRecipe } from '../types/recipe'
+import {
+  parseRecentRecipes,
+  persistRecentRecipe,
+  RECENT_RECIPES_STORAGE_KEY,
+} from '../utils/recentRecipes'
 
 function difficultyLabel(d: GeneratedRecipe['difficulty']): string {
   const m = { easy: 'Easy', medium: 'Medium', hard: 'Hard' } as const
@@ -69,24 +74,34 @@ function instructionBlocks(recipe: GeneratedRecipe): { title: string; body: stri
 export default function RecipeDetailScreen() {
   const { recipeId } = useParams<{ recipeId: string }>()
   const navigate = useNavigate()
-  const { recipes, savedIds, toggleSaved } = useGeneratedRecipes()
-  const recipe = useMemo(
-    () => recipes.find((r) => r.id === recipeId) ?? null,
-    [recipes, recipeId]
-  )
+  const { recipes, savedIds, toggleSaved, mergeRecipes } = useGeneratedRecipes()
+  const recipe = useMemo((): GeneratedRecipe | null => {
+    if (!recipeId) return null
+    const fromCtx = recipes.find((r) => r.id === recipeId)
+    if (fromCtx) return fromCtx
+    const entry = parseRecentRecipes(localStorage.getItem(RECENT_RECIPES_STORAGE_KEY)).find(
+      (e) => e.id === recipeId
+    )
+    return entry?.recipe ?? null
+  }, [recipes, recipeId])
+
+  useEffect(() => {
+    if (!recipeId || !recipe) return
+    if (recipes.some((r) => r.id === recipeId)) return
+    mergeRecipes([recipe])
+  }, [recipeId, recipe, recipes, mergeRecipes])
+
   useEffect(() => {
     if (!recipe) return
-    const data = localStorage.getItem('recentRecipes')
-    let arr: { id: string; title: string }[] = []
-    if (data) {
-      try {
-        arr = JSON.parse(data)
-      } catch {}
-    }
-    arr = arr.filter((r) => r.id !== recipe.id)
-    arr.unshift({ id: recipe.id, title: recipe.title })
-    if (arr.length > 10) arr = arr.slice(0, 10)
-    localStorage.setItem('recentRecipes', JSON.stringify(arr))
+    const snapshot = JSON.parse(JSON.stringify(recipe)) as GeneratedRecipe
+    persistRecentRecipe({
+      id: recipe.id,
+      title: recipe.title,
+      imageUrl: recipe.imageUrl,
+      timeDisplay: timeSummary(recipe),
+      ingredientCount: recipe.ingredients?.length ?? 0,
+      recipe: snapshot,
+    })
   }, [recipe])
   const instructionsRef = useRef<HTMLElement>(null)
 

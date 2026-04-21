@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Header from '../components/Header'
 import QuickActionCards from '../components/home/QuickActionCards'
 import SearchBar from '../components/home/SearchBar'
-import SuggestedRecipes from '../components/home/SuggestedRecipes'
+import RecentlyViewedRecipes from '../components/home/RecentlyViewedRecipes'
 import { homeCategoryChips } from '../data/homeCategoryChips'
-import { suggestedRecipes } from '../data/suggestedRecipes'
 import { contentShellClass } from '../layout/contentShell'
+import {
+  parseRecentRecipes,
+  RECENT_RECIPES_STORAGE_KEY,
+  type RecentRecipeEntry,
+} from '../utils/recentRecipes'
 import { API_BASE } from '../config/api'
 import { useAuth } from '../context/AuthContext'
 import { usePantryScan } from '../context/PantryScanContext'
-import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
 
 function greetingFirstName(user: { name: string; email: string } | null): string | null {
   if (!user) return null
@@ -20,8 +23,6 @@ function greetingFirstName(user: { name: string; email: string } | null): string
   return local || null
 }
 
-type RecentRecipe = { id: string; title: string }
-
 type DetectedIngredient = {
   name: string
   confidence: 'high' | 'medium' | 'low'
@@ -29,19 +30,21 @@ type DetectedIngredient = {
 }
 
 export default function HomeScreen() {
-  const [recentRecipes, setRecentRecipes] = useState<RecentRecipe[]>([])
-  const { recipes: contextRecipes } = useGeneratedRecipes()
+  const [recentRecipes, setRecentRecipes] = useState<RecentRecipeEntry[]>([])
   const { user, loading: authLoading } = useAuth()
   const greetName = !authLoading ? greetingFirstName(user) : null
 
   useEffect(() => {
-    const data = localStorage.getItem('recentRecipes')
-    if (data) {
-      try {
-        setRecentRecipes(JSON.parse(data))
-      } catch {}
-    }
+    setRecentRecipes(parseRecentRecipes(localStorage.getItem(RECENT_RECIPES_STORAGE_KEY)))
   }, [])
+
+  const recentWithImagesTop3 = useMemo(
+    () =>
+      recentRecipes
+        .filter((e) => Boolean(e.imageUrl?.trim()))
+        .slice(0, 3),
+    [recentRecipes]
+  )
   const navigate = useNavigate()
   const { queuePantryFromScan } = usePantryScan()
   const [pantryScanning, setPantryScanning] = useState(false)
@@ -152,27 +155,7 @@ export default function HomeScreen() {
             </div>
           </section>
 
-          <SuggestedRecipes recipes={suggestedRecipes} />
-
-          <section className="mt-6">
-            <h2 className="text-lg font-semibold mb-2">Recently Viewed Recipes</h2>
-            {(() => {
-              const contextIds = new Set(contextRecipes.map((r) => r.id))
-              const available = recentRecipes.filter((r) => contextIds.has(r.id))
-              if (available.length === 0) return null
-              return (
-                <ul className="space-y-1">
-                  {available.slice(0, 3).map((r) => (
-                    <li key={r.id}>
-                      <Link to={`/recipe/${r.id}`} className="text-primary underline">
-                        {r.title}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )
-            })()}
-          </section>
+          <RecentlyViewedRecipes entries={recentWithImagesTop3} />
         </main>
       </div>
     </div>
