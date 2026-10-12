@@ -5,6 +5,7 @@ import { BookmarkIcon as BookmarkSolidIcon } from '@heroicons/react/24/solid'
 import { SparklesIcon, UsersIcon } from '@heroicons/react/24/outline'
 import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
 import type { GeneratedRecipe } from '../types/recipe'
+import GenAIMorphCanvas from '../components/agent/GenAIMorphCanvas'
 import {
   parseRecentRecipes,
   persistRecentRecipe,
@@ -320,6 +321,8 @@ export default function RecipeDetailScreen() {
               </p>
             </div>
           )}
+
+          <GenAIMorphCanvas recipe={recipe} />
 
         </div>
       </div>

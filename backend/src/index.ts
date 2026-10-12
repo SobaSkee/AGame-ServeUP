@@ -68,8 +68,11 @@ function publicApiBaseUrl(): string {
 	return `http://localhost:${PORT}`
 }
 
+import { agentRouter } from './routes/agent.router.ts'
+
 app.use('/uploads', express.static(uploadDir))
 app.use("/api/auth", authRoutes)
+app.use("/api/agent", agentRouter)
 
 app.get('/health', (req: Request, res: Response) => {
   res.json({ status: 'ok' })

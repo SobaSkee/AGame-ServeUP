@@ -5,6 +5,9 @@ import { apiUrl, authHeaders } from '../config/api'
 import { useGeneratedRecipes } from '../context/GeneratedRecipesContext'
 import { usePantryScan } from '../context/PantryScanContext'
 import { useAuth } from '../context/AuthContext'
+import AgentDeliberationModal from '../components/agent/AgentDeliberationModal'
+import P2pSyncBanner from '../components/p2p/P2pSyncBanner'
+import { SparklesIcon } from '@heroicons/react/24/outline'
 
 const POPULAR = ['Eggs', 'Cheese', 'Milk', 'Onions', 'Garlic', 'Tomatoes', 'Chicken', 'Pasta', 'Rice', 'Butter', 'Spinach', 'Potatoes'] as const
 
@@ -18,6 +21,7 @@ export default function IngredientsScreen() {
   const { consumePendingPantry } = usePantryScan()
   const [query, setQuery] = useState('')
   const [items, setItems] = useState<string[]>(() => [...INITIAL_PANTRY])
+  const [isAgentModalOpen, setIsAgentModalOpen] = useState(false)
   const initialised = useRef(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const serverItems = useRef<string[]>([])
@@ -172,6 +176,10 @@ export default function IngredientsScreen() {
         </header>
 
         <div className="flex flex-1 flex-col px-6 pb-44 pt-2 md:px-10 md:pb-48 lg:px-12">
+          <P2pSyncBanner
+            currentItems={items}
+            onPantryUpdated={(newItems) => setItems(newItems)}
+          />
           <section className="pt-2">
             <div className="flex flex-col gap-3 pb-8 md:gap-3.5 md:pb-10 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
               <div className="flex min-w-0 flex-1 flex-col gap-3">
@@ -289,20 +297,41 @@ export default function IngredientsScreen() {
 
       {/* Above bottom nav (nav ~80px) */}
       <div className="pointer-events-none fixed inset-x-0 bottom-20 z-40 flex justify-center">
-        <div className="pointer-events-auto w-full max-w-[390px] border-t border-[#f3f4f6] bg-[#ffffffcf] px-6 py-6 backdrop-blur-[10.5px] md:max-w-3xl md:rounded-b-2xl md:border-x md:border-b md:border-[#f3f4f6] lg:max-w-4xl">
+        <div className="pointer-events-auto w-full max-w-[390px] border-t border-[#f3f4f6] bg-[#ffffffcf] px-6 py-4 backdrop-blur-[10.5px] md:max-w-3xl md:rounded-b-2xl md:border-x md:border-b md:border-[#f3f4f6] lg:max-w-4xl flex flex-col gap-2">
+          <button
+            type="button"
+            disabled={count === 0}
+            onClick={() => setIsAgentModalOpen(true)}
+            className="relative flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-3.5 text-base font-bold text-white shadow-lg transition-all hover:brightness-110 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <SparklesIcon className="size-5 animate-pulse text-emerald-200" />
+            AI Multi-Agent Swarm Deliberate
+            <span className="ml-1 rounded-full bg-white/20 px-2 py-0.5 text-xs font-semibold tabular-nums">
+              {badgeCount}
+            </span>
+          </button>
+
           <button
             type="button"
             disabled={count === 0 || loadingRecipes}
             onClick={generateRecipes}
-            className="relative flex w-full items-center justify-center gap-3 rounded-lg bg-[#16a34a] px-4 py-4 pr-14 text-base font-medium leading-normal text-white shadow-[0_1px_1.75px_rgba(0,0,0,0.05)] transition-opacity hover:opacity-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="relative flex w-full items-center justify-center gap-3 rounded-lg bg-zinc-800 px-4 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loadingRecipes ? 'Generating…' : 'Generate Recipes'}
-            <span className="absolute right-3 top-1/2 flex min-h-6 min-w-6 -translate-y-1/2 items-center justify-center rounded-md bg-white/10 px-2 py-0.5 text-xs font-semibold tabular-nums">
-              {badgeCount}
-            </span>
+            {loadingRecipes ? 'Generating…' : 'Standard Recipe Search'}
           </button>
         </div>
       </div>
+
+      <AgentDeliberationModal
+        isOpen={isAgentModalOpen}
+        onClose={() => setIsAgentModalOpen(false)}
+        ingredients={items}
+        onRecipesGenerated={(agentRecipes) => {
+          setGeneratedRecipes(agentRecipes as any)
+          setIsAgentModalOpen(false)
+          navigate('/generated-recipes')
+        }}
+      />
     </div>
   )
 }
